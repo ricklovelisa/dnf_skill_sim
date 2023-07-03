@@ -31,6 +31,7 @@ class Sim:
             print()
             skill_apl.append({cdr_info.skill.name: {'n': times, 'damage': cdr_info.skill.get_final_damage(time, times)}})
         print(json.dumps(skill_apl, ensure_ascii=False, indent=4))
+        return skill_apl
 
 
 if __name__ == '__main__':
@@ -43,4 +44,4 @@ if __name__ == '__main__':
         cdr_info_json = json.load(f)
 
     sim = Sim()
-    sim.run_with_time(skill_list, cdr_info_json, 40)
+    apl = sim.run_with_time(skill_list, cdr_info_json, 40)
