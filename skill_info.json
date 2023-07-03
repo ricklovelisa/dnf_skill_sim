@@ -1,0 +1,69 @@
+[
+  {
+    "name": "邪光",
+    "cd": 10,
+    "level": 20,
+    "damage": 1000
+  },
+  {
+    "name": "波爆",
+    "cd": 7.5,
+    "level": 25,
+    "damage": 1000
+  },
+  {
+    "name": "小冰",
+    "cd": 7,
+    "level": 30,
+    "damage": 1000
+  },
+  {
+    "name": "无双",
+    "cd": 20,
+    "level": 35,
+    "damage": 1000
+  },
+  {
+    "name": "小火",
+    "cd": 15,
+    "level": 35,
+    "damage": 1000
+  },
+  {
+    "name": "炸热",
+    "cd": 20,
+    "level": 40,
+    "damage": 1000
+  },
+  {
+    "name": "大冰",
+    "cd": 20,
+    "level": 60,
+    "damage": 2000
+  },
+  {
+    "name": "大火",
+    "cd": 50,
+    "level": 70,
+    "damage": 2000
+  },
+  {
+    "name": "呀呀呀",
+    "cd": 45,
+    "level": 75,
+    "damage": 2000
+  },
+  {
+    "name": "雷云",
+    "cd": 45,
+    "level": 80,
+    "damage": 2000,
+    "damage_2": 200
+  },
+  {
+    "name": "无为法",
+    "cd": 60,
+    "level": 95,
+    "damage": 2000
+  }
+]
