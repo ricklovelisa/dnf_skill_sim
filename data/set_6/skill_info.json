@@ -3,61 +3,61 @@
     "name": "邪光",
     "cd": 10,
     "level": 20,
-    "damage": 202325395
+    "damage": 227628510
   },
   {
     "name": "波爆",
     "cd": 7.5,
     "level": 25,
-    "damage": 12115878
+    "damage": 136312313
   },
   {
     "name": "小冰",
     "cd": 7,
     "level": 30,
-    "damage": 95062065
+    "damage": 106950667
   },
   {
     "name": "无双",
     "cd": 20,
     "level": 35,
-    "damage": 187244554
+    "damage": 210661636
   },
   {
     "name": "小火",
     "cd": 15,
     "level": 35,
-    "damage": 175658545
+    "damage": 197626664
   },
   {
     "name": "炸热",
     "cd": 20,
     "level": 40,
-    "damage": 259139546
+    "damage": 291547922
   },
   {
     "name": "大火",
     "cd": 50,
     "level": 70,
-    "damage": 37173664
+    "damage": 418268230
   },
   {
     "name": "呀呀呀",
-    "cd": 45,
+    "cd": 40,
     "level": 75,
-    "damage": 549902997
+    "damage": 618674682
   },
   {
     "name": "雷云",
     "cd": 45,
     "level": 80,
-    "damage": 559713252,
-    "damage_2": 39921665
+    "damage": 629711823,
+    "damage_2": 44914328
   },
   {
     "name": "无为法",
     "cd": 60,
     "level": 95,
-    "damage": 592860196
+    "damage": 667004172
   }
 ]
