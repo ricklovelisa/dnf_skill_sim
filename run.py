@@ -2,6 +2,10 @@ import json
 import os
 from typing import List
 
+import pandas as pd
+import tqdm
+import matplotlib.pyplot as plt
+
 from cdr import CDRInfo, parse_cdr_info
 from skill import Skill, parse_skill
 
@@ -33,7 +37,7 @@ class Sim:
             # print("=======================================")
             # print()
             skill_apl.append(
-                {cdr_info.skill.name: {'n': times, 'damage': cdr_info.skill.get_final_damage(time, times)}})
+                {'name': cdr_info.skill.name, 'n': times, 'damage': cdr_info.skill.get_final_damage(time, times)})
         # print(json.dumps(skill_apl, ensure_ascii=False, indent=4))
         return skill_apl
 
@@ -42,9 +46,9 @@ if __name__ == '__main__':
     set_list = os.listdir(DATA_PATH)
     sim = Sim()
 
-    total_result = []
-    for set_file in set_list:
-        for time in range(10, 180, 5):
+    total_result = {}
+    for set_file in tqdm.tqdm(set_list):
+        for time in tqdm.tqdm(range(10, 45, 5)):
             with open(f'{DATA_PATH}/{set_file}/set_info', 'r') as f:
                 set_info = f.read()
 
@@ -57,7 +61,28 @@ if __name__ == '__main__':
                 cdr_info_json = json.load(f)
 
             apl = sim.run_with_time(skill_list, cdr_info_json, time)
-            case = {'set_info': set_info, 'apl': apl, 'time': time}
-            total_result.append(case)
+            case = {'apl': apl, 'time': time}
+
+            if set_file in total_result:
+                total_result[set_file].append(case)
+            else:
+                total_result[set_file] = [case]
 
     print(json.dumps(total_result, ensure_ascii=False))
+    total_damage_dict = {}
+    for set_info, apl_time_list in total_result.items():
+        time_list = []
+        damage_list = []
+        for apl_time in apl_time_list:
+            apl_list = apl_time['apl']
+            total_damage = 0
+            for apl in apl_list:
+                total_damage += apl['damage']
+            time_list.append(apl_time['time'])
+            damage_list.append(total_damage)
+        if 'time' not in total_damage_dict:
+            total_damage_dict['time'] = time_list
+        total_damage_dict[set_info] = damage_list
+    df = pd.DataFrame(total_damage_dict)
+    df.plot(x='time', kind='line')
+    plt.show()

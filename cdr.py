@@ -45,7 +45,7 @@ class CDRInfo:
             curr_lingtong_cdrr = skill_time % (cycle_times + 1) * self._lingtong_pct
             final_cdrr += curr_lingtong_cdrr
         final_cd = final_cdr / (1 + final_cdrr) * self._skill.cd
-        print(f'final_cdr: {final_cdr}, final_cdrr: {final_cdrr}, final_cd: {final_cd}')
+        # print(f'final_cdr: {final_cdr}, final_cdrr: {final_cdrr}, final_cd: {final_cd}')
         return final_cd
 
 
@@ -58,18 +58,18 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[CDRInfo
     if 'common_cdr' in cdr_info_json:
         for cdr in cdr_info_json['common_cdr']:
             common_cdr *= cdr
-    print('common_cdr:', common_cdr)
+    # print('common_cdr:', common_cdr)
 
     common_cdrr = 0
     if 'common_cdrr' in cdr_info_json:
         for cdrr in cdr_info_json['common_cdrr']:
             common_cdrr += cdrr
-    print('common_cdrr:', common_cdrr)
+    # print('common_cdrr:', common_cdrr)
 
     result = []
     for skill in skill_list:
-        print('===============================================================')
-        print(skill.detail)
+        # print('===============================================================')
+        # print(skill.detail)
         lingtong_pct = 0
         if str(skill.level) in lingtong_info:
             lingtong_pct = lingtong_info[str(skill.level)]
@@ -80,7 +80,7 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[CDRInfo
                 if skill.name in red_fuwen_dict:
                     for red_fuwen_cdr in range(red_fuwen_dict[skill.name]):
                         final_red_fuwen_cdr *= 1.04
-        print('final_red_fuwen_cdr:', final_red_fuwen_cdr)
+        # print('final_red_fuwen_cdr:', final_red_fuwen_cdr)
 
         final_blue_fuwen_cdr = 1
         if 'blue_fuwen' in cdr_info_json:
@@ -88,7 +88,7 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[CDRInfo
                 if skill.name in blue_fuwen_dict:
                     for red_fuwen_cdr in range(blue_fuwen_dict[skill.name]):
                         final_blue_fuwen_cdr *= 0.95
-        print('final_blue_fuwen_cdr', final_blue_fuwen_cdr)
+        # print('final_blue_fuwen_cdr', final_blue_fuwen_cdr)
 
         final_other_skill_cdr = 1
         if 'other_skill_cdr' in cdr_info_json:
@@ -106,6 +106,6 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[CDRInfo
                            other_skill_cdr=final_other_skill_cdr,
                            other_skill_cdrr=0)
         result.append(cdr_info)
-        print('===============================================================')
-        print()
+        # print('===============================================================')
+        # print()
     return result

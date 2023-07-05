@@ -29,8 +29,8 @@ class Skill:
 
     def get_final_damage(self, time, times):
         if self._name == '雷云':
-            print(time / 2 * self._damage_2)
-            print(times * self._damage)
+            # print(time / 2 * self._damage_2)
+            # print(times * self._damage)
             return time / 2 * self._damage_2 + times * self._damage
         else:
             return self._damage * times
