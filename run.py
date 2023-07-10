@@ -84,6 +84,8 @@ class Sim:
             total = df[
                 ['邪光', '波爆', '小冰', '无双', '小火', '炸热', '不动', '大冰', '大火', '呀呀呀', '雷云',
                  '无为法']].sum(axis=1)
+
+            df.to_csv('all_time_skill_damage.csv', encoding='utf_8_sig')
             time = df['time']
             for col in ['邪光', '波爆', '小冰', '无双', '小火', '炸热', '不动', '大冰', '大火', '呀呀呀', '雷云',
                         '无为法']:
@@ -129,5 +131,5 @@ if __name__ == '__main__':
                 total_result[set_file] = [case]
 
     print(json.dumps(total_result, ensure_ascii=False))
-    # sim.analysis_total(total_result)
+    sim.analysis_total(total_result)
     sim.analysis_skill_pct(total_result)
