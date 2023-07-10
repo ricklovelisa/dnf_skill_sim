@@ -1,9 +1,13 @@
 class Skill:
 
-    def __init__(self, level: int, name: str, cd: float, damage: float, damage_2: float = 0):
+    def __init__(self, level: int, name: str, cd: float, cast_time: float, after_cast_time: float, forced_interp: float,
+                 damage: float, damage_2: float = 0):
         self._level = level
         self._name = name
         self._cd = float(cd)
+        self._cast_time = float(cast_time)
+        self._after_cast_time = float(after_cast_time)
+        self._forced_interp = float(forced_interp)
         self._damage = float(damage)
         self._damage_2 = float(damage_2)
 
@@ -22,6 +26,10 @@ class Skill:
     @property
     def damage(self):
         return self._damage
+
+    @property
+    def damage_2(self):
+        return self._damage_2
 
     @property
     def detail(self):
