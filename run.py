@@ -41,6 +41,19 @@ class Sim:
         # print(json.dumps(skill_apl, ensure_ascii=False, indent=4))
         return skill_apl
 
+    def find_max_damage_apl(self, skill_list: List[Skill], cdr_info_json: dict, time: int):
+        skill_cdr_list = parse_cdr_info(skill_list, cdr_info_json)
+        total_damage = []
+        for i in range(len(skill_list)):
+            start_skill = skill_cdr_list[i]
+            max_damage = 0
+            max_damage_cnt = 10
+            while True:
+                pass
+
+
+
+
     def run(self, set_file_name, max_time, step, records_file_name):
         total_result = []
         for time in tqdm.tqdm(range(10, max_time + step, step)):

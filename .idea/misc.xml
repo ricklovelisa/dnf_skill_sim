@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+<<<<<<< HEAD
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (阿修罗技能测试)" project-jdk-type="Python SDK" />
+=======
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (dnf_skill_sim)" project-jdk-type="Python SDK" />
+>>>>>>> 3d7a7bd483c5cb878c6db93decd533e96fef0d48
 </project>
