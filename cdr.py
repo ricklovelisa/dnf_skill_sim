@@ -3,7 +3,7 @@ from typing import List
 from skill import Skill
 
 
-class CDRInfo:
+class SkillCDRInfo:
     lingtong_cd_map = {0.1: 4, 0.15: 3, 0.2: 2}
     op_ind_cdr_map = {0.99: [1, 5, 10, 15, 20, 25, 30],
                       0.98: [35, 40, 45, 60, 70],
@@ -49,7 +49,7 @@ class CDRInfo:
         return final_cd
 
 
-def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[CDRInfo]:
+def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[SkillCDRInfo]:
     lingtong_info = {}
     if 'lingtong_info' in cdr_info_json:
         lingtong_info = cdr_info_json['lingtong_info']
@@ -97,14 +97,14 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[CDRInfo
                     for other_skill_cdr in other_skill_dict[skill.name]:
                         final_other_skill_cdr *= other_skill_cdr
 
-        cdr_info = CDRInfo(skill=skill,
-                           lingtong_pct=lingtong_pct,
-                           red_fuwen=final_red_fuwen_cdr,
-                           blue_fuwen=final_blue_fuwen_cdr,
-                           common_cdr=common_cdr,
-                           common_cdrr=common_cdrr,
-                           other_skill_cdr=final_other_skill_cdr,
-                           other_skill_cdrr=0)
+        cdr_info = SkillCDRInfo(skill=skill,
+                                lingtong_pct=lingtong_pct,
+                                red_fuwen=final_red_fuwen_cdr,
+                                blue_fuwen=final_blue_fuwen_cdr,
+                                common_cdr=common_cdr,
+                                common_cdrr=common_cdrr,
+                                other_skill_cdr=final_other_skill_cdr,
+                                other_skill_cdrr=0)
         result.append(cdr_info)
         # print('===============================================================')
         # print()

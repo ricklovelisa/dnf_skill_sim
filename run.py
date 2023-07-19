@@ -6,7 +6,7 @@ import pandas as pd
 import tqdm
 import matplotlib.pyplot as plt
 
-from cdr import CDRInfo, parse_cdr_info
+from cdr import SkillCDRInfo, parse_cdr_info
 from skill import Skill, parse_skill
 
 DATA_PATH = 'data'
@@ -40,19 +40,6 @@ class Sim:
                 {'name': cdr_info.skill.name, 'n': times, 'damage': cdr_info.skill.get_final_damage(time, times)})
         # print(json.dumps(skill_apl, ensure_ascii=False, indent=4))
         return skill_apl
-
-    def find_max_damage_apl(self, skill_list: List[Skill], cdr_info_json: dict, time: int):
-        skill_cdr_list = parse_cdr_info(skill_list, cdr_info_json)
-        total_damage = []
-        for i in range(len(skill_list)):
-            start_skill = skill_cdr_list[i]
-            max_damage = 0
-            max_damage_cnt = 10
-            while True:
-                pass
-
-
-
 
     def run(self, set_file_name, max_time, step, records_file_name):
         total_result = []
