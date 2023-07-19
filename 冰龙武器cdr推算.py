@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from cdr import parse_cdr_info
-from skill import parse_skill
+from skill import Skill
 
 DATA_PATH = 'data'
 
@@ -35,16 +35,7 @@ class Calc:
         with open(f'{DATA_PATH}/{set_file_name}/skill_info.json', 'r') as f:
             skill_dict = {}
             for skill_info in json.load(f):
-                skill = parse_skill(skill_info)
-                skill_dict[skill['name']] = skill
-
-            while True:
-                # 先随机抽样全局cdr
-
-                # 生成全局skill_set
-                global_skill_set = []
-                for skill_name in skill_pool:
-                    skill = skill_dict[skill_name]
+                skill = Skill(skill_info)
 
 
 if __name__ == '__main__':

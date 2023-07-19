@@ -1,15 +1,22 @@
+import json
+from typing import Dict, List
+
+
 class Skill:
 
-    def __init__(self, level: int, name: str, cd: float, cast_time: float, after_cast_time: float, forced_interp: float,
-                 damage: float, damage_2: float = 0):
-        self._level = level
-        self._name = name
-        self._cd = float(cd)
-        self._cast_time = float(cast_time)
-        self._after_cast_time = float(after_cast_time)
-        self._forced_interp = float(forced_interp)
-        self._damage = float(damage)
-        self._damage_2 = float(damage_2)
+    def __init__(self, skill_config_dict: dict):
+        self._level = skill_config_dict['level']
+        self._name = skill_config_dict['name']
+        self._cd = float(skill_config_dict['cd'])
+        self._cast_time = float(skill_config_dict['cast_time'])
+        self._during = float(skill_config_dict['during'])
+        self._force_next_skill_time = {}
+        if 'force_next_skill_time' in skill_config_dict:
+            self._force_next_skill_time = skill_config_dict['force_next_skill_time']
+        self._damage = float(skill_config_dict['damage'])
+        self._damage_2 = 0
+        if 'damage_2' in skill_config_dict:
+            self._damage_2 = skill_config_dict['damage_2']
 
     @property
     def level(self):
@@ -24,6 +31,18 @@ class Skill:
         return self._cd
 
     @property
+    def cast_time(self):
+        return self._cast_time
+
+    @property
+    def during(self):
+        return self._during
+
+    @property
+    def force_next_skill_time(self):
+        return self._force_next_skill_time
+
+    @property
     def damage(self):
         return self._damage
 
@@ -33,7 +52,8 @@ class Skill:
 
     @property
     def detail(self):
-        return f'name: {self._name}, level: {self._level}, cd: {self._cd}, damage: {self._damage}'
+        return f'name: {self.name}, level: {self.level}, cd: {self.cd}, cast_time: {self.cast_time}, ' \
+               f'during: {self.during}, force_next_skill_time: {self.force_next_skill_time}, damage: {self.damage}'
 
     def get_final_damage(self, time, times):
         if self._name == '雷云':
@@ -43,32 +63,16 @@ class Skill:
         else:
             return self._damage * times
 
+    def add_stone_info(self, skill_info_list: List[Dict], stone_skill_info_list: List[Dict]):
+        for skill_info in skill_info_list:
+            alted_skill_info = {}
+            for stone_skill_info in stone_skill_info_list:
+                if skill_info['name'] == stone_skill_info['name']:
 
-def parse_skill(skill_info: dict):
-    if 'level' in skill_info \
-            and 'name' in skill_info \
-            and 'cd' in skill_info \
-            and 'damage' in skill_info \
-            and 'damage_2' in skill_info:
 
-        return Skill(level=skill_info['level'],
-                     name=skill_info['name'],
-                     cd=skill_info['cd'],
-                     damage=skill_info['damage'],
-                     damage_2=skill_info['damage_2'])
-    elif 'level' in skill_info \
-            and 'name' in skill_info \
-            and 'cd' in skill_info \
-            and 'damage' in skill_info:
-
-        return Skill(level=skill_info['level'],
-                     name=skill_info['name'],
-                     cd=skill_info['cd'],
-                     damage=skill_info['damage'])
-    else:
-        return None
 
 
 if __name__ == '__main__':
-    result = parse_skill({'name': '大冰', 'cd': 20, 'level': 60, 'damage': 100})
-    print(result)
+    with open('C:/Users/QQ/PycharmProjects/阿修罗技能测试/data/basic_set/skill_info.json', 'r', encoding='utf_8') as f:
+        for skill_info in json.load(f):
+            print(Skill(skill_info).detail)
