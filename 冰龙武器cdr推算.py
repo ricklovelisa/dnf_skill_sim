@@ -1,4 +1,5 @@
 import json
+from typing import List, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,7 @@ from skill import parse_skill
 
 DATA_PATH = 'data'
 
+
 class Calc:
     def compute_cdr_line(self, start, end, waste_time, cdrr):
         raw_cd = np.linspace(start, end, 500)
@@ -16,18 +18,33 @@ class Calc:
         plt.plot(raw_cd, final_cd)
         plt.show()
 
-    def compute_cd_set(self, set_file_name, ):
+    def _check_fuwen(self, color, result_skill_set: List[Dict]):
+        pass
+
+    def _check_final_cd_diff(self, waste_time):
+        pass
+
+    def _check_tiemo(self, ):
+        pass
+
+    def _sample_global_cdr(self, n):
+
+        pass
+
+    def compute_cd_set(self, set_file_name, skill_pool: List):
         with open(f'{DATA_PATH}/{set_file_name}/skill_info.json', 'r') as f:
-            skill_list = []
+            skill_dict = {}
             for skill_info in json.load(f):
-                skill_list.append(parse_skill(skill_info))
+                skill = parse_skill(skill_info)
+                skill_dict[skill['name']] = skill
 
-            with open(f'{DATA_PATH}/{set_file_name}/cdr_info.json', 'r') as f:
-                cdr_info_json = json.load(f)
+            while True:
+                # 先随机抽样全局cdr
 
-            result = parse_cdr_info(skill_list, cdr_info_json)
-
-
+                # 生成全局skill_set
+                global_skill_set = []
+                for skill_name in skill_pool:
+                    skill = skill_dict[skill_name]
 
 
 if __name__ == '__main__':
