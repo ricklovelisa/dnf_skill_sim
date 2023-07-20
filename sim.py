@@ -134,9 +134,6 @@ class Sim:
         real_cd = skill.skill.cast_time + cd
         skill_status.start_cooling_down(skill.name, real_cd)
 
-        # 更新所有技能的cd状态，以供下一次循环时使用
-        skill_status.cooling_down()
-
         # 判断是否有可柔化的技能
         next_skill_list = []
         if skill.skill.force_next_skill_time:
@@ -181,6 +178,9 @@ class Sim:
             # 执行技能
             action_time, next_skill = self._action(skill_cdr, skill_status)
             time_line = time_line + wait_time + self._human_refletion + action_time
+
+            # 更新所有技能的cd状态，以供下一次循环时使用
+            skill_status.cooling_down(, skill_name)
 
     def run(self, set_file_name, stone_sets, skill_list, max_time, step):
         skill_info, stone_skill_info, cdr_info = self._read_set_file(set_file_name)
