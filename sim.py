@@ -131,16 +131,16 @@ class Sim:
         cd = skill.get_final_cd(cnt)
 
         # 更新该技能的cd状态
-        real_cd = skill.skill.cast_time + cd
+        real_cd = skill.cast_time + cd - skill.during
         skill_status.start_cooling_down(skill.name, real_cd)
 
         # 判断是否有可柔化的技能
         next_skill_list = []
-        if skill.skill.force_next_skill_time:
-            next_skill_list.extend(list(skill.skill.force_next_skill_time.keys))
+        if skill.force_next_skill_time:
+            next_skill_list.extend(list(skill.force_next_skill_time.keys))
 
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
-        return skill.skill.cast_time + skill.skill.during, next_skill_list
+        return skill.cast_time + skill.during, next_skill_list
 
     def _get_a_skill(self, skill_status: SkillStatus):
         aval_skills = skill_status.find_almost_available_skills()
@@ -173,14 +173,17 @@ class Sim:
 
             # 判断是否为柔化技能
             force_time_reduce = self._force_process(last_skill_info, skill_cdr.skill)
-            time_line = time_line - force_time_reduce
 
             # 执行技能
             action_time, next_skill = self._action(skill_cdr, skill_status)
-            time_line = time_line + wait_time + self._human_refletion + action_time
+
+            # 更新时间轴
+            past_time = - force_time_reduce + wait_time + self._human_refletion + action_time
+            time_line = time_line + past_time
 
             # 更新所有技能的cd状态，以供下一次循环时使用
-            skill_status.cooling_down(, skill_name)
+            skill_status.cooling_down(past_time, skill_name)
+        return None
 
     def run(self, set_file_name, stone_sets, skill_list, max_time, step):
         skill_info, stone_skill_info, cdr_info = self._read_set_file(set_file_name)
