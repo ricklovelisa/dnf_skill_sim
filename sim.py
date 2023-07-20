@@ -15,27 +15,25 @@ DATA_PATH = 'data'
 
 
 class SkillStatus:
-    def __init__(self, skill_list: Dict):
+    def __init__(self, skill_info: Dict):
         # {"炸热":{"rest_cd":0.4,"cnt":1}}
-        self._skill_status_map = self._init_status_map(skill_list)
-        self._skill_cdr_info = skill_list
+        self._skill_status_map = self._init_status_map(skill_info)
+        self._skill_cdr_info = skill_info
 
-    def _init_status_map(self, skill_list: Dict):
+    def _init_status_map(self, skill_info: Dict):
         result = {}
-        for skill in skill_list:
+        for skill in skill_info:
             case = {'res_cd': 0.0, "cnt": 0}
             result[skill.skill.name] = case
         return result
 
-    def cooling_down(self, ts: float, skill_name: str = None):
-        if skill_name:
-            current_res_cd = self._skill_status_map[skill_name]['res_cd']
-            self._skill_status_map[skill_name]['res_cd'] = max(current_res_cd - ts, 0)
-        else:
-            for skill_name in self._skill_status_map:
-                self.cooling_down(ts, skill_name)
+    def cooling_down(self, ts: float, except_skill_name: str):
+        for skill_name in self._skill_status_map:
+            if skill_name != except_skill_name:
+                current_res_cd = self._skill_status_map[skill_name]['res_cd']
+                self._skill_status_map[skill_name]['res_cd'] = max(current_res_cd - ts, 0)
 
-    def find_almost_available_skills(self):
+    def find_almost_available_skills(self) -> Dict[float, List[str]]:
         result = {}
         diff_cds = 99999
         for skill_name in self._skill_status_map:
@@ -43,7 +41,7 @@ class SkillStatus:
             if res_cd < diff_cds:
                 result = {res_cd: [skill_name]}
                 diff_cds = res_cd
-            if res_cd == diff_cds:
+            elif res_cd == diff_cds:
                 result[res_cd].append[skill_name]
         return result
 
@@ -57,8 +55,9 @@ class SkillStatus:
 
 class Sim:
 
-    def __init__(self, bias: Union[float, str] = 1):
+    def __init__(self, bias: Union[float, str] = 1, human_refletion=0.1):
         self._bias = bias
+        self._human_refletion = human_refletion
 
     def run_with_time(self, skill_dict: Dict, cdr_info_json: Dict, time: int):
         # 先根据skill list和cdr_info_json生成对应技能的cdr
@@ -135,6 +134,9 @@ class Sim:
         real_cd = skill.skill.cast_time + cd
         skill_status.start_cooling_down(skill.name, real_cd)
 
+        # 更新所有技能的cd状态，以供下一次循环时使用
+        skill_status.cooling_down()
+
         # 判断是否有可柔化的技能
         next_skill_list = []
         if skill.skill.force_next_skill_time:
@@ -144,26 +146,41 @@ class Sim:
         return skill.skill.cast_time + skill.skill.during, next_skill_list
 
     def _get_a_skill(self, skill_status: SkillStatus):
-        aval_skills = skill_status.find_available_skills()
-        if aval_skills:
+        aval_skills = skill_status.find_almost_available_skills()
+        wait_time = list(aval_skills.keys())[0]
+        skills = aval_skills[wait_time]
+        if len(skills) == 1:
+            return wait_time, skills[0]
+        else:
+            return wait_time, random.choice(skills, 1)
 
-        random.choice
+    def _force_process(self, last_skill_info: Dict, current_skill: Skill):
+        if last_skill_info:
+            last_skill = last_skill_info['last']
+            next_skill_list = last_skill_info['next']
+
+        else:
+            return 0
 
     def sim_with_random(self, skill_pool: Dict[str, SkillCDRInfo], total_time: float):
         skill_status = self._create_skill_status(skill_pool)
         time_line = 0
-        next_skill = []
+        last_skill_info = {}
         while True:
             if time_line >= total_time - self._bias:
                 break
 
             # 随机选择一个技能
-            wait_time, skill_name = self._get_a_skill()
-            skill = skill_pool[skill_name]
+            wait_time, skill_name = self._get_a_skill(skill_status)
+            skill_cdr = skill_pool[skill_name]
 
-            # 执行
-            action_time, next_skill = self._action(skill, skill_status)
-            time_line = time_line + wait_time + action_time
+            # 判断是否为柔化技能
+            force_time_reduce = self._force_process(last_skill_info, skill_cdr.skill)
+            time_line = time_line - force_time_reduce
+
+            # 执行技能
+            action_time, next_skill = self._action(skill_cdr, skill_status)
+            time_line = time_line + wait_time + self._human_refletion + action_time
 
     def run(self, set_file_name, stone_sets, skill_list, max_time, step):
         skill_info, stone_skill_info, cdr_info = self._read_set_file(set_file_name)
@@ -181,6 +198,7 @@ class Sim:
 
 
 if __name__ == '__main__':
+    random.seed(19920125)
     sim = Sim()
     # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
     # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
