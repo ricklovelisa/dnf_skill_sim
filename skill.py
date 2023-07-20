@@ -1,12 +1,13 @@
+import copy
 import json
 from typing import Dict, List
 
 
 class Skill:
 
-    def __init__(self, skill_config_dict: dict):
+    def __init__(self, skill_name, skill_config_dict: dict):
+        self._name = skill_name
         self._level = skill_config_dict['level']
-        self._name = skill_config_dict['name']
         self._cd = float(skill_config_dict['cd'])
         self._cast_time = float(skill_config_dict['cast_time'])
         self._during = float(skill_config_dict['during'])
@@ -63,16 +64,16 @@ class Skill:
         else:
             return self._damage * times
 
-    def add_stone_info(self, skill_info_list: List[Dict], stone_skill_info_list: List[Dict]):
-        for skill_info in skill_info_list:
-            alted_skill_info = {}
-            for stone_skill_info in stone_skill_info_list:
-                if skill_info['name'] == stone_skill_info['name']:
+    @staticmethod
+    def create_skill_with_stone(skill_name: str, skill_info: Dict, stone_info: Dict):
+        new_skill_info = copy.deepcopy(skill_info)
+        for key, value in stone_info.items():
+            new_skill_info[key] = value
 
-
+        return Skill(skill_name, new_skill_info)
 
 
 if __name__ == '__main__':
     with open('C:/Users/QQ/PycharmProjects/阿修罗技能测试/data/basic_set/skill_info.json', 'r', encoding='utf_8') as f:
-        for skill_info in json.load(f):
-            print(Skill(skill_info).detail)
+        for skill_name, skill_info in json.load(f).items():
+            print(Skill(skill_name, skill_info).detail)

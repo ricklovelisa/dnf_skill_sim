@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from skill import Skill
 
@@ -31,7 +31,7 @@ class SkillCDRInfo:
     def skill(self):
         return self._skill
 
-    def get_final_cd(self, skill_time: int):
+    def get_final_cd(self, skill_times: int):
         op_ind_cdr = 1
         for k, v in self.op_ind_cdr_map.items():
             if self._skill.level in v:
@@ -42,14 +42,14 @@ class SkillCDRInfo:
         # print(self.lingtong_cd_map)
         if self._lingtong_pct in self.lingtong_cd_map:
             cycle_times = self.lingtong_cd_map[self._lingtong_pct]
-            curr_lingtong_cdrr = skill_time % (cycle_times + 1) * self._lingtong_pct
+            curr_lingtong_cdrr = skill_times % (cycle_times + 1) * self._lingtong_pct
             final_cdrr += curr_lingtong_cdrr
         final_cd = final_cdr / (1 + final_cdrr) * self._skill.cd
         # print(f'final_cdr: {final_cdr}, final_cdrr: {final_cdrr}, final_cd: {final_cd}')
         return final_cd
 
 
-def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[SkillCDRInfo]:
+def parse_cdr_info(skill_dict: Dict, cdr_info_json: dict) -> Dict:
     lingtong_info = {}
     if 'lingtong_info' in cdr_info_json:
         lingtong_info = cdr_info_json['lingtong_info']
@@ -66,8 +66,8 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[SkillCD
             common_cdrr += cdrr
     # print('common_cdrr:', common_cdrr)
 
-    result = []
-    for skill in skill_list:
+    result = {}
+    for skill_name, skill in skill_dict.items():
         # print('===============================================================')
         # print(skill.detail)
         lingtong_pct = 0
@@ -105,7 +105,7 @@ def parse_cdr_info(skill_list: List[Skill], cdr_info_json: dict) -> List[SkillCD
                                 common_cdrr=common_cdrr,
                                 other_skill_cdr=final_other_skill_cdr,
                                 other_skill_cdrr=0)
-        result.append(cdr_info)
+        result[skill_name] = cdr_info
         # print('===============================================================')
         # print()
     return result
