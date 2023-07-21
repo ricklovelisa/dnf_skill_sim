@@ -240,8 +240,7 @@ class Sim:
                 print('当前搭配最高伤害的技能伤害:',
                       json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
                 print('当前搭配最高伤害的技能伤害（总）:', best_skill_queue['skill_queue'].compute_total_damage())
-                break
-            break
+
 
 
 if __name__ == '__main__':
