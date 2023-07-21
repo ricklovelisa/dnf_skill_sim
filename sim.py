@@ -9,7 +9,7 @@ import tqdm
 import matplotlib.pyplot as plt
 
 from cdr import SkillCDRInfo, parse_cdr_info
-from skill import Skill
+from skill import Skill, SkillQueue
 
 DATA_PATH = 'data'
 
@@ -22,9 +22,9 @@ class SkillStatus:
 
     def _init_status_map(self, skill_info: Dict):
         result = {}
-        for skill in skill_info:
+        for skill_name in skill_info:
             case = {'res_cd': 0.0, "cnt": 0}
-            result[skill.skill.name] = case
+            result[skill_info[skill_name].skill.name] = case
         return result
 
     def cooling_down(self, ts: float, except_skill_name: str):
@@ -42,7 +42,7 @@ class SkillStatus:
                 result = {res_cd: [skill_name]}
                 diff_cds = res_cd
             elif res_cd == diff_cds:
-                result[res_cd].append[skill_name]
+                result[res_cd].append(skill_name)
         return result
 
     def start_cooling_down(self, skill_name: str, cd: float):
@@ -55,9 +55,10 @@ class SkillStatus:
 
 class Sim:
 
-    def __init__(self, bias: Union[float, str] = 1, human_refletion=0.1):
+    def __init__(self, bias: Union[float, str] = 1, human_refletion=0.1, debug=False):
         self._bias = bias
         self._human_refletion = human_refletion
+        self._debug = debug
 
     def run_with_time(self, skill_dict: Dict, cdr_info_json: Dict, time: int):
         # 先根据skill list和cdr_info_json生成对应技能的cdr
@@ -87,13 +88,13 @@ class Sim:
         return skill_apl
 
     def _read_set_file(self, set_file_name):
-        with open(f'{DATA_PATH}/{set_file_name}/skill_info.json', 'r') as f:
+        with open(f'{DATA_PATH}/{set_file_name}/skill_info.json', 'r', encoding='utf_8') as f:
             skill_info = json.load(f)
 
-        with open(f'{DATA_PATH}/{set_file_name}/cdr_info.json', 'r') as f:
+        with open(f'{DATA_PATH}/{set_file_name}/cdr_info.json', 'r', encoding='utf_8') as f:
             cdr_info = json.load(f)
 
-        with open(f'{DATA_PATH}/{set_file_name}/stone_skill_info.json', 'r') as f:
+        with open(f'{DATA_PATH}/{set_file_name}/stone_skill_info.json', 'r', encoding='utf_8') as f:
             stone_skill_info = json.load(f)
         return skill_info, stone_skill_info, cdr_info
 
@@ -128,19 +129,14 @@ class Sim:
         skill = skill_cdr.skill
         # 获取该技能cd
         cnt = skill_status.add_skill_cnt(skill.name, 1)
-        cd = skill.get_final_cd(cnt)
+        cd = skill_cdr.get_final_cd(cnt)
 
         # 更新该技能的cd状态
         real_cd = skill.cast_time + cd - skill.during
         skill_status.start_cooling_down(skill.name, real_cd)
 
-        # 判断是否有可柔化的技能
-        next_skill_list = []
-        if skill.force_next_skill_time:
-            next_skill_list.extend(list(skill.force_next_skill_time.keys))
-
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
-        return skill.cast_time + skill.during, next_skill_list
+        return skill.cast_time + skill.during
 
     def _get_a_skill(self, skill_status: SkillStatus):
         aval_skills = skill_status.find_almost_available_skills()
@@ -149,60 +145,114 @@ class Sim:
         if len(skills) == 1:
             return wait_time, skills[0]
         else:
-            return wait_time, random.choice(skills, 1)
+            return wait_time, random.choice(skills)
 
-    def _force_process(self, last_skill_info: Dict, current_skill: Skill):
-        if last_skill_info:
-            last_skill = last_skill_info['last']
-            next_skill_list = last_skill_info['next']
-
+    @staticmethod
+    def _force_process(last_skill_force_info: Skill, current_skill: Skill) -> float:
+        if last_skill_force_info and last_skill_force_info.force_next_skill_time:
+            if current_skill.name in last_skill_force_info.force_next_skill_time:
+                force_time = last_skill_force_info.force_next_skill_time[current_skill.name]
+                reduce_time = last_skill_force_info.cast_time + last_skill_force_info.during - force_time
+                return reduce_time
+            else:
+                return 0.0
         else:
-            return 0
+            return 0.0
 
     def sim_with_random(self, skill_pool: Dict[str, SkillCDRInfo], total_time: float):
         skill_status = self._create_skill_status(skill_pool)
         time_line = 0
-        last_skill_info = {}
-        while True:
-            if time_line >= total_time - self._bias:
-                break
+        force_skill_info = None
 
+        skill_queue = []
+        while True:
             # 随机选择一个技能
             wait_time, skill_name = self._get_a_skill(skill_status)
             skill_cdr = skill_pool[skill_name]
 
             # 判断是否为柔化技能
-            force_time_reduce = self._force_process(last_skill_info, skill_cdr.skill)
+            force_time_reduce = self._force_process(force_skill_info, skill_cdr.skill)
 
             # 执行技能
-            action_time, next_skill = self._action(skill_cdr, skill_status)
+            action_time = self._action(skill_cdr, skill_status)
+
+            # 判断执行完这个技能，是否会超过time line限制
+            past_time = - force_time_reduce + wait_time + self._human_refletion + action_time
+            if time_line + past_time > total_time - self._bias:
+                break
 
             # 更新时间轴
-            past_time = - force_time_reduce + wait_time + self._human_refletion + action_time
             time_line = time_line + past_time
 
             # 更新所有技能的cd状态，以供下一次循环时使用
             skill_status.cooling_down(past_time, skill_name)
-        return None
 
-    def run(self, set_file_name, stone_sets, skill_list, max_time, step):
+            # 更新柔化技能信息
+            force_skill_info = skill_cdr.skill
+
+            if self._debug:
+                if force_time_reduce:
+                    print(
+                        f'本次模拟，柔化释放技能【{skill_name}】, wait_time:{wait_time}, action_time:{action_time}, '
+                        f'force_time:{force_time_reduce}, human reflection:{self._human_refletion}, time line: {time_line}')
+                else:
+                    print(
+                        f'本次模拟，释放技能【{skill_name}】, wait_time:{wait_time}, action_time:{action_time}, '
+                        f'human reflection:{self._human_refletion}, time line: {time_line}')
+            skill_queue.append(skill_cdr.skill)
+
+        return SkillQueue(skill_queue, total_time)
+
+    def sim(self, epochs, skill_pool, total_time):
+        max_skill_queue = {'damage': 0, 'skill_queue': None}
+        for i in tqdm.tqdm(range(epochs), desc='开始进行最优技能模拟'):
+            if self._debug:
+                print('---------------------------------------------')
+
+            skill_queue = self.sim_with_random(skill_pool, total_time)
+            damage = skill_queue.compute_total_damage()
+            if damage > max_skill_queue['damage']:
+                max_skill_queue['damage'] = damage
+                max_skill_queue['skill_queue'] = skill_queue
+
+            if self._debug:
+                print('---------------------------------------------')
+                print()
+
+        return max_skill_queue
+
+    def run(self, epochs, set_file_name, stone_sets, skill_list, time_range, step):
         skill_info, stone_skill_info, cdr_info = self._read_set_file(set_file_name)
 
         # 先根据护石信息，生成护石sets
         stone_set_list = self._get_stone_sets(stone_sets)
 
         # 根据skill信息，生成skill_list
-        for total_time in range(10, max_time + step, step):
+        for total_time in range(time_range[0], time_range[1] + step, step):
             for stone_set in stone_set_list:
                 skill_cdr_info = self._create_skill_cdr_info(skill_list=skill_list, skill_info=skill_info,
                                                              stone_set=stone_set, stone_skill_info=stone_skill_info,
                                                              cdr_info=cdr_info)
-                self.sim(skill_pool=skill_cdr_info, total_time=total_time)
+                best_skill_queue = self.sim(epochs, skill_pool=skill_cdr_info, total_time=total_time)
+                print(f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
+                print('当前搭配最高伤害的技能序列:',
+                      json.dumps([i.name for i in best_skill_queue['skill_queue'].list], ensure_ascii=False))
+                print('当前搭配最高伤害的技能伤害:',
+                      json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
+                print('当前搭配最高伤害的技能伤害（总）:', best_skill_queue['skill_queue'].compute_total_damage())
+                break
+            break
 
 
 if __name__ == '__main__':
     random.seed(19920125)
-    sim = Sim()
+    sim = Sim(debug=False)
+    sim.run(epochs=100000, set_file_name='basic_set',
+            stone_sets=['炸热', '雷云', '呀呀呀', '不动'],
+            skill_list=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
+                        '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
+            time_range=(40, 40),
+            step=5)
     # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
     # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
     # sim.run(set_file_name='set_2', max_time=60, step=5, records_file_name='无特化技能(呀呀呀护石)占比')

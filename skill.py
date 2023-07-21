@@ -17,46 +17,49 @@ class Skill:
         self._damage = float(skill_config_dict['damage'])
         self._damage_2 = 0
         if 'damage_2' in skill_config_dict:
-            self._damage_2 = skill_config_dict['damage_2']
+            self._damage_2 = float(skill_config_dict['damage_2'])
 
     @property
-    def level(self):
+    def level(self) -> int:
         return self._level
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def cd(self):
+    def cd(self) -> float:
         return self._cd
 
     @property
-    def cast_time(self):
+    def cast_time(self) -> float:
         return self._cast_time
 
     @property
-    def during(self):
+    def during(self) -> float:
         return self._during
 
     @property
-    def force_next_skill_time(self):
+    def force_next_skill_time(self) -> Dict:
         return self._force_next_skill_time
 
     @property
-    def damage(self):
+    def damage(self) -> float:
         return self._damage
 
     @property
-    def damage_2(self):
+    def damage_2(self) -> float:
         return self._damage_2
 
     @property
-    def detail(self):
+    def detail(self) -> str:
         return f'name: {self.name}, level: {self.level}, cd: {self.cd}, cast_time: {self.cast_time}, ' \
                f'during: {self.during}, force_next_skill_time: {self.force_next_skill_time}, damage: {self.damage}'
 
-    def get_final_damage(self, time, times):
+    def __str__(self):
+        return self.detail
+
+    def get_final_damage(self, time, times) -> float:
         if self._name == '雷云':
             # print(time / 2 * self._damage_2)
             # print(times * self._damage)
@@ -71,6 +74,38 @@ class Skill:
             new_skill_info[key] = value
 
         return Skill(skill_name, new_skill_info)
+
+
+class SkillQueue:
+    def __init__(self, skill_queue: List[Skill], total_time: float):
+        self._queue = skill_queue
+        self._total_time = total_time
+
+    def compute_total_damage(self):
+        damage_by_skill = self.compute_damage_by_skill()
+
+        total_damage = 0
+        for skill_name, info in damage_by_skill.items():
+            total_damage += info['damage']
+        return total_damage
+
+    def compute_damage_by_skill(self):
+        damage_dict = {}
+        for skill in self._queue:
+            if skill.name in damage_dict:
+                damage_dict[skill.name]['times'] += 1
+            else:
+                damage_dict[skill.name] = {'times': 1}
+
+        for skill in self._queue:
+            damage = skill.get_final_damage(self._total_time, damage_dict[skill.name]['times'])
+            damage_dict[skill.name]['damage'] = damage
+
+        return damage_dict
+
+    @property
+    def list(self):
+        return self._queue
 
 
 if __name__ == '__main__':

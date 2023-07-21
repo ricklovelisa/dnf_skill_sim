@@ -7,7 +7,7 @@ class SkillCDRInfo:
     lingtong_cd_map = {0.1: 4, 0.15: 3, 0.2: 2}
     op_ind_cdr_map = {0.99: [1, 5, 10, 15, 20, 25, 30],
                       0.98: [35, 40, 45, 60, 70],
-                      0.95: [75, 80, 95]}
+                      0.95: [75, 80, 95, 100]}
 
     def __init__(self,
                  skill: Skill,
