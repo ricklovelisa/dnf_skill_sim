@@ -204,7 +204,7 @@ class Sim:
         return SkillQueue(skill_queue, total_time)
 
     def sim(self, epochs, skill_pool, total_time):
-        max_skill_queue = {'damage': 0, 'skill_queue': None}
+        max_skill_queue = {'damage': 0}
         for i in tqdm.tqdm(range(epochs), desc='开始进行最优技能模拟'):
             if self._debug:
                 print('---------------------------------------------')
@@ -214,6 +214,7 @@ class Sim:
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
                 max_skill_queue['skill_queue'] = skill_queue
+                max_skill_queue['epoch'] = i
 
             if self._debug:
                 print('---------------------------------------------')
@@ -227,6 +228,7 @@ class Sim:
         # 先根据护石信息，生成护石sets
         stone_set_list = self._get_stone_sets(stone_sets)
 
+        max_result = {'damage': 0}
         # 根据skill信息，生成skill_list
         for total_time in range(time_range[0], time_range[1] + step, step):
             for stone_set in stone_set_list:
@@ -235,16 +237,31 @@ class Sim:
                                                              cdr_info=cdr_info)
                 best_skill_queue = self.sim(epochs, skill_pool=skill_cdr_info, total_time=total_time)
                 print(f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
+                print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
                 print('当前搭配最高伤害的技能序列:',
                       json.dumps([i.name for i in best_skill_queue['skill_queue'].list], ensure_ascii=False))
                 print('当前搭配最高伤害的技能伤害:',
                       json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
                 print('当前搭配最高伤害的技能伤害（总）:', best_skill_queue['skill_queue'].compute_total_damage())
+                print()
 
+                if best_skill_queue['damage'] > max_result['damage']:
+                    max_result['damage'] = best_skill_queue['damage']
+                    max_result['skill_queue'] = best_skill_queue['skill_queue']
+                    max_result['stone_set'] = stone_set
+
+            print(
+                f'伤害最高的搭配，护石组合: {json.dumps(max_result["stone_set"], ensure_ascii=False)}, 测试时长: {total_time}')
+            print('伤害最高的搭配的技能序列:',
+                  json.dumps([i.name for i in max_result['skill_queue'].list], ensure_ascii=False))
+            print('伤害最高的搭配的技能伤害:',
+                  json.dumps(max_result['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
+            print('伤害最高的搭配的技能伤害（总）:', max_result['skill_queue'].compute_total_damage())
+            print()
 
 
 if __name__ == '__main__':
-    random.seed(19920125)
+    # random.seed(19920125)
     sim = Sim(debug=False)
     sim.run(epochs=100000, set_file_name='basic_set',
             stone_sets=['炸热', '雷云', '呀呀呀', '不动'],
