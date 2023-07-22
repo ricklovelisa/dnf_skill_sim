@@ -2,21 +2,21 @@
   "邪光": {
     "cd": 10,
     "level": 20,
-    "damage": 179573961,
+    "damage": 195696958,
     "cast_time": 0.139,
     "during": 0.396
   },
   "波爆": {
     "cd": 7.5,
     "level": 25,
-    "damage": 128122776,
+    "damage": 139626242,
     "cast_time": 0,
     "during": 0.361
   },
   "小冰": {
     "cd": 7,
     "level": 30,
-    "damage": 101341119,
+    "damage": 110440003,
     "cast_time": 0,
     "during": 0.515,
     "force_next_skill_time": {
@@ -26,7 +26,7 @@
   "无双": {
     "cd": 20,
     "level": 35,
-    "damage": 211573924,
+    "damage": 230570028,
     "cast_time": 0,
     "during": 0.556,
     "force_next_skill_time": {
@@ -36,7 +36,7 @@
   "小火": {
     "cd": 15,
     "level": 35,
-    "damage": 187762407,
+    "damage": 204620601,
     "cast_time": 0,
     "during": 0.377,
     "force_next_skill_time": {
@@ -46,7 +46,7 @@
   "炸热": {
     "cd": 20,
     "level": 40,
-    "damage": 221241707,
+    "damage": 241105830,
     "cast_time": 0,
     "during": 0.32,
     "force_next_skill_time": {
@@ -56,14 +56,14 @@
   "不动": {
     "cd": 45,
     "level": 45,
-    "damage": 494708447,
+    "damage": 539125702,
     "cast_time": 0,
     "during": 2.403
   },
   "大冰": {
     "cd": 20,
     "level": 60,
-    "damage": 216468066,
+    "damage": 235914487,
     "cast_time": 0,
     "during": 0.926,
     "force_next_skill_time": {
@@ -73,7 +73,7 @@
   "大火": {
     "cd": 50,
     "level": 70,
-    "damage": 278769145,
+    "damage": 455697529,
     "cast_time": 0,
     "during": 0.494,
     "force_next_skill_time": {
@@ -83,36 +83,36 @@
   "呀呀呀": {
     "cd": 40,
     "level": 75,
-    "damage": 488909591,
+    "damage": 517073380,
     "cast_time": 0,
     "during": 0.376
   },
   "雷云": {
     "cd": 45,
     "level": 80,
-    "damage": 343759770,
-    "damage_2": 33256283,
+    "damage": 374624142,
+    "damage_2": 36242189,
     "cast_time": 0,
     "during": 0.535
   },
   "无为法": {
     "cd": 60,
     "level": 95,
-    "damage": 720964645,
+    "damage": 785696248,
     "cast_time": 0,
     "during": 1.514
   },
   "2觉": {
     "cd": 180,
     "level": 85,
-    "damage": 983048184,
+    "damage": 1071310883,
     "cast_time": 0,
     "during": 1.632
   },
   "3觉": {
     "cd": 290,
     "level": 100,
-    "damage": 1816237918,
+    "damage": 1979308317,
     "cast_time": 0.507,
     "during": 5.75
   }

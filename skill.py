@@ -2,10 +2,12 @@ import copy
 import json
 from typing import Dict, List
 
+from cdr import CDRInfo
+
 
 class Skill:
 
-    def __init__(self, skill_name, skill_config_dict: dict):
+    def __init__(self, skill_name, skill_config_dict: dict, cdr_info: CDRInfo = None):
         self._name = skill_name
         self._level = skill_config_dict['level']
         self._cd = float(skill_config_dict['cd'])
@@ -18,6 +20,7 @@ class Skill:
         self._damage_2 = 0
         if 'damage_2' in skill_config_dict:
             self._damage_2 = float(skill_config_dict['damage_2'])
+        self._cdr_info = cdr_info
 
     @property
     def level(self) -> int:
@@ -59,6 +62,23 @@ class Skill:
     def __str__(self):
         return self.detail
 
+    def add_cdr_info(self, cdr_info: CDRInfo):
+        self._cdr_info = cdr_info
+
+    def update_damage(self, damage_rate: Dict):
+        if self.name in damage_rate['skill']:
+            if self.name == '雷云':
+                self._damage = damage_rate['skill'][self.name] * self._damage
+            else:
+                self._damage = damage_rate['skill'][self.name] * self._damage
+                self._damage_2 = damage_rate['skill'][self.name] * self._damage_2
+        else:
+            self._damage = damage_rate['global'] * self._damage
+            self._damage_2 = damage_rate['global'] * self._damage_2
+
+    def get_final_cd(self, is_op: bool, times: int):
+        return self.cd * self._cdr_info.get_cdr(is_op, times)
+
     def get_final_damage(self, time, times) -> float:
         if self._name == '雷云':
             # print(time / 2 * self._damage_2)
@@ -71,7 +91,10 @@ class Skill:
     def create_skill_with_stone(skill_name: str, skill_info: Dict, stone_info: Dict):
         new_skill_info = copy.deepcopy(skill_info)
         for key, value in stone_info.items():
-            new_skill_info[key] = value
+            if key == 'damage':
+                new_skill_info[key] = new_skill_info[key] * value
+            else:
+                new_skill_info[key] = value
 
         return Skill(skill_name, new_skill_info)
 
