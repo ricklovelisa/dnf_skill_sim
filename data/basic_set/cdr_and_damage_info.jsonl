@@ -1,3 +1,4 @@
-{"damage_info": {"global": 0.9027},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.3], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
-{"damage_info": {"global": 0.9222},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.3], "lingtong_info": {}}}
 {"damage_info": {"global": 1},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [], "lingtong_info": {}}}
+{"damage_info": {"global": 0.8953},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.25], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
+{"damage_info": {"global": 0.8645},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.3], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
+{"damage_info": {"global": 0.8567},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.42], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
