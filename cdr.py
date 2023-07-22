@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict
 
 
 class CDRInfo:
@@ -13,17 +13,17 @@ class CDRInfo:
                  red_fuwen: int,
                  blue_fuwen: int,
                  common_cdr: float,
-                 common_cdrr: float,
-                 other_skill_cdr: float,
-                 other_skill_cdrr: float):
+                 common_cdrr: float):
+        # other_skill_cdr: float,
+        # other_skill_cdrr: float):
         self._op_ind_cdr = op_ind_cdr
         self._lingtong_pct = lingtong_pct
         self._red_fuwen = red_fuwen
         self._blue_fuwen = blue_fuwen
         self._common_cdr = common_cdr
         self._common_cdrr = common_cdrr
-        self._other_skill_cdr = other_skill_cdr
-        self._other_skill_cdrr = other_skill_cdrr
+        # self._other_skill_cdr = other_skill_cdr
+        # self._other_skill_cdrr = other_skill_cdrr
 
     def get_cdr(self, is_op: bool, skill_times: int):
 
@@ -32,8 +32,10 @@ class CDRInfo:
         if is_op:
             op_ind_cdr = self._op_ind_cdr
 
-        final_cdr = self._common_cdr * self._other_skill_cdr * self._red_fuwen * self._blue_fuwen * op_ind_cdr
-        final_cdrr = self._common_cdrr + self._other_skill_cdrr
+        # final_cdr = self._common_cdr * self._other_skill_cdr * self._red_fuwen * self._blue_fuwen * op_ind_cdr
+        # final_cdrr = self._common_cdrr + self._other_skill_cdrr
+        final_cdr = self._common_cdr * self._red_fuwen * self._blue_fuwen * op_ind_cdr
+        final_cdrr = self._common_cdrr
 
         # 灵通
         if self._lingtong_pct in self.lingtong_cd_map:
@@ -44,7 +46,7 @@ class CDRInfo:
         return final_cdr / (1 + final_cdrr)
 
 
-def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict):
+def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict, fuwen_info: Dict):
     lingtong_info = {}
     if 'lingtong_info' in cdr_info_json:
         lingtong_info = cdr_info_json['lingtong_info']
@@ -66,27 +68,23 @@ def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict):
         lingtong_pct = lingtong_info[str(skill_level)]
 
     final_red_fuwen_cdr = 1
-    if 'red_fuwen' in cdr_info_json:
-        for red_fuwen_dict in cdr_info_json['red_fuwen']:
-            if skill_name in red_fuwen_dict:
-                for red_fuwen_cdr in range(red_fuwen_dict[skill_name]):
-                    final_red_fuwen_cdr *= 1.04
-    # print('final_red_fuwen_cdr:', final_red_fuwen_cdr)
+    if 'red' in fuwen_info:
+        if skill_name in fuwen_info['red']:
+            final_red_fuwen_cdr *= 1.04 ** fuwen_info['red'][skill_name]
+    # print(f'skill: {skill_name}, final_red_fuwen_cdr: {final_red_fuwen_cdr}')
 
     final_blue_fuwen_cdr = 1
-    if 'blue_fuwen' in cdr_info_json:
-        for blue_fuwen_dict in cdr_info_json['blue_fuwen']:
-            if skill_name in blue_fuwen_dict:
-                for red_fuwen_cdr in range(blue_fuwen_dict[skill_name]):
-                    final_blue_fuwen_cdr *= 0.95
-    # print('final_blue_fuwen_cdr', final_blue_fuwen_cdr)
+    if 'blue' in fuwen_info:
+        if skill_name in fuwen_info['blue']:
+            final_blue_fuwen_cdr *= 0.95 ** fuwen_info['blue'][skill_name]
+    # print(f'skill: {skill_name}, final_blue_fuwen_cdr: {final_blue_fuwen_cdr}')
 
-    final_other_skill_cdr = 1
-    if 'other_skill_cdr' in cdr_info_json:
-        for other_skill_dict in cdr_info_json['other_skill_cdr']:
-            if skill_name in other_skill_dict:
-                for other_skill_cdr in other_skill_dict[skill_name]:
-                    final_other_skill_cdr *= other_skill_cdr
+    # final_other_skill_cdr = 1
+    # if 'other_skill_cdr' in cdr_info_json:
+    #     for other_skill_dict in cdr_info_json['other_skill_cdr']:
+    #         if skill_name in other_skill_dict:
+    #             for other_skill_cdr in other_skill_dict[skill_name]:
+    #                 final_other_skill_cdr *= other_skill_cdr
 
     op_ind_cdr = 0.99
     for op_cdr, skill_level_list in CDRInfo.op_ind_cdr_map.items():
@@ -98,6 +96,6 @@ def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict):
                    red_fuwen=final_red_fuwen_cdr,
                    blue_fuwen=final_blue_fuwen_cdr,
                    common_cdr=common_cdr,
-                   common_cdrr=common_cdrr,
-                   other_skill_cdr=final_other_skill_cdr,
-                   other_skill_cdrr=0)
+                   common_cdrr=common_cdrr)
+    # other_skill_cdr=final_other_skill_cdr,
+    # other_skill_cdrr=0)

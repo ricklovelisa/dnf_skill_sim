@@ -2,7 +2,7 @@ import copy
 import json
 from typing import Dict, List
 
-from cdr import CDRInfo
+from cdr import CDRInfo, make_cdr_info
 
 
 class Skill:
@@ -62,19 +62,28 @@ class Skill:
     def __str__(self):
         return self.detail
 
-    def add_cdr_info(self, cdr_info: CDRInfo):
-        self._cdr_info = cdr_info
+    def add_cdr_info(self, cdr_info, fuwen_info):
+        self._cdr_info = make_cdr_info(self.name, self.level, cdr_info, fuwen_info)
 
-    def update_damage(self, damage_rate: Dict):
-        if self.name in damage_rate['skill']:
-            if self.name == '雷云':
-                self._damage = damage_rate['skill'][self.name] * self._damage
-            else:
-                self._damage = damage_rate['skill'][self.name] * self._damage
-                self._damage_2 = damage_rate['skill'][self.name] * self._damage_2
-        else:
-            self._damage = damage_rate['global'] * self._damage
-            self._damage_2 = damage_rate['global'] * self._damage_2
+    def _generate_fuwen_damage_rate(self, fuwen_info):
+        red_damage_rate = 1
+        if 'red' in fuwen_info:
+            if self.name in fuwen_info['red']:
+                red_damage_rate *= 1.06 ** fuwen_info['red'][self.name]
+
+        purple_damage_rate = 1
+        if 'red' in fuwen_info:
+            if self.name in fuwen_info['purple']:
+                purple_damage_rate *= 1.04 ** fuwen_info['purple'][self.name]
+
+        return red_damage_rate * purple_damage_rate
+
+    def update_damage(self, damage_info: Dict, fuwen_info):
+        fuwen_rate = self._generate_fuwen_damage_rate(fuwen_info)
+
+        # 全局技能倍率
+        self._damage = damage_info['global'] * fuwen_rate * self._damage
+        self._damage_2 = damage_info['global'] * fuwen_rate * self._damage_2
 
     def get_final_cd(self, is_op: bool, times: int):
         return self.cd * self._cdr_info.get_cdr(is_op, times)
