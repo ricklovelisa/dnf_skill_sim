@@ -314,7 +314,7 @@ class Sim:
 if __name__ == '__main__':
     # random.seed(19920125)
     sim = Sim(debug=False)
-    sim.run(epochs=10, set_file_name='basic_set',
+    sim.run(epochs=299999, set_file_name='basic_set',
             stone_sets=['炸热', '呀呀呀', '不动', '雷云'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
