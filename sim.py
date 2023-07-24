@@ -17,7 +17,7 @@ class SkillStatus:
     def __init__(self, skill_info: Dict):
         # {"炸热":{"rest_cd":0.4,"cnt":1}}
         self._skill_status_map = self._init_status_map(skill_info)
-        self._skill_cdr_info = skill_info
+        self._skill_info = skill_info
 
     def _init_status_map(self, skill_info: Dict):
         result = {}
@@ -32,22 +32,22 @@ class SkillStatus:
                 current_res_cd = self._skill_status_map[skill_name]['res_cd']
                 self._skill_status_map[skill_name]['res_cd'] = max(current_res_cd - ts, 0)
 
-    def find_almost_available_skills(self) -> Dict[float, List[str]]:
+    def find_almost_available_skills(self) -> Dict[float, List[Skill]]:
         result = {}
         diff_cds = 99999
         for skill_name in self._skill_status_map:
             res_cd = self._skill_status_map[skill_name]['res_cd']
             if res_cd < diff_cds:
-                result = {res_cd: [skill_name]}
+                result = {res_cd: [self._skill_info[skill_name]]}
                 diff_cds = res_cd
             elif res_cd == diff_cds:
-                result[res_cd].append(skill_name)
+                result[res_cd].append(self._skill_info[skill_name])
         return result
 
     def start_cooling_down(self, skill_name: str, cd: float):
         self._skill_status_map[skill_name]['res_cd'] = cd
 
-    def add_skill_cnt(self, skill_name: str, cnt):
+    def add_skill_cnt(self, skill_name: str, cnt) -> int:
         self._skill_status_map[skill_name]['cnt'] += cnt
         return self._skill_status_map[skill_name]['cnt']
 
@@ -150,8 +150,17 @@ class Sim:
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
         return skill.cast_time + skill.during
 
+    def _choice_skill(self, skill_status: SkillStatus, choice_type: str):
+        if choice_type == 'random':
+            return self._random_a_skill(skill_status)
+        elif choice_type == 'heuristic':
+            return self._heuristic_choice_a_skill(skill_status)
+
+    def _heuristic_choice_a_skill(self, skill_status:SkillStatus):
+
+
     @staticmethod
-    def _get_a_skill(skill_status: SkillStatus):
+    def _random_a_skill(skill_status: SkillStatus):
         aval_skills = skill_status.find_almost_available_skills()
         wait_time = list(aval_skills.keys())[0]
         skills = aval_skills[wait_time]
@@ -172,7 +181,7 @@ class Sim:
         else:
             return 0.0
 
-    def sim_with_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
+    def sim_best_skill_queue(self, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: float):
         skill_status = self._create_skill_status(skill_info)
         time_line = 0
         force_skill_info = None
@@ -180,8 +189,9 @@ class Sim:
         skill_queue = []
         while True:
             # 随机选择一个技能
-            wait_time, skill_name = self._get_a_skill(skill_status)
-            skill = skill_info[skill_name]
+            wait_time, skill = self._choice_skill(skill_status, choice_type)
+            # wait_time, skill_name = self._get_a_skill(skill_status)
+            # skill = skill_info[skill_name]
 
             # 判断是否为柔化技能
             force_time_reduce = self._force_process(force_skill_info, skill)
@@ -198,7 +208,7 @@ class Sim:
             time_line = time_line + past_time
 
             # 更新所有技能的cd状态，以供下一次循环时使用
-            skill_status.cooling_down(past_time, skill_name)
+            skill_status.cooling_down(past_time, skill.name)
 
             # 更新柔化技能信息
             force_skill_info = skill
@@ -206,23 +216,24 @@ class Sim:
             if self._debug:
                 if force_time_reduce:
                     print(
-                        f'本次模拟，柔化释放技能【{skill_name}】, wait_time:{wait_time}, action_time:{action_time}, '
+                        f'本次模拟，柔化释放技能【{skill.name}】, wait_time:{wait_time}, action_time:{action_time}, '
                         f'force_time_reduce:{force_time_reduce}, human reflection:{self._human_refletion}, time line: {time_line}')
                 else:
                     print(
-                        f'本次模拟，释放技能【{skill_name}】, wait_time:{wait_time}, action_time:{action_time}, '
+                        f'本次模拟，释放技能【{skill.name}】, wait_time:{wait_time}, action_time:{action_time}, '
                         f'human reflection:{self._human_refletion}, time line: {time_line}')
             skill_queue.append(skill)
 
         return SkillQueue(skill_queue, total_time)
 
-    def sim(self, epochs: int, skill_info: Dict[str, Skill], is_op, total_time):
+    def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int):
         max_skill_queue = {'damage': 0}
         for i in tqdm.tqdm(range(epochs), desc='开始进行最优技能模拟'):
             if self._debug:
                 print('---------------------------------------------')
 
-            skill_queue = self.sim_with_random(skill_info=skill_info, is_op=is_op, total_time=total_time)
+            skill_queue = self.sim_best_skill_queue(choice_type=choice_type, skill_info=skill_info, is_op=is_op,
+                                                    total_time=total_time)
             damage = skill_queue.compute_total_damage()
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
@@ -259,7 +270,8 @@ class Sim:
         # blue_sets = set(combinations(fuwen_skill_pool, 3))
         # purp_sets = set(combinations(fuwen_skill_pool, 3))
 
-    def run(self, epochs, set_file_name, stone_sets, skill_sets, time_range, step, op_info: List[bool]):
+    def run(self, epochs: int, set_file_name: str, stone_sets: List, skill_sets: List, choice_type: str,
+            time_range: Tuple, step: int, op_info: List[bool], fuwen_info_list: Dict = None):
         skill_info, stone_skill_info, cdr_and_damage_info = self._read_set_file(set_file_name)
 
         # 先根据护石信息，生成护石sets
@@ -271,14 +283,16 @@ class Sim:
             for is_op in op_info:
                 for stone_set in stone_set_list:
                     # 根据护石组合，生成符文组合：
-                    fuwen_info_list = self._create_fuwen_skill_set(stone_set)
+                    if not fuwen_info_list:
+                        fuwen_info_list = self._create_fuwen_skill_set(stone_set)
                     for fuwen_info in fuwen_info_list:
+                        # print('fuwen_info', fuwen_info)
                         for cdr_damage in cdr_and_damage_info:
                             skill_list = self._create_skill(skill_list=skill_sets, skill_info=skill_info,
                                                             stone_set=stone_set, stone_skill_info=stone_skill_info,
                                                             fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
-                            best_skill_queue = self.sim(epochs=epochs, skill_info=skill_list, total_time=total_time,
-                                                        is_op=is_op)
+                            best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
+                                                        total_time=total_time, is_op=is_op)
                             # print(f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
                             # print(f'当前搭配最高，是否手搓:{is_op}')
                             # print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
@@ -314,13 +328,15 @@ class Sim:
 if __name__ == '__main__':
     # random.seed(19920125)
     sim = Sim(debug=False)
-    sim.run(epochs=299999, set_file_name='basic_set',
-            stone_sets=['炸热', '呀呀呀', '不动', '雷云'],
+    sim.run(epochs=299999, set_file_name='test_sim_set',
+            stone_sets=['炸热', '呀呀呀', '不动'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
+            choice_type='random',
             time_range=(40, 40),
+            fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
             step=5,
-            op_info=[True, False])
+            op_info=[True])
     # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
     # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
     # sim.run(set_file_name='set_2', max_time=60, step=5, records_file_name='无特化技能(呀呀呀护石)占比')

@@ -1,0 +1,6 @@
+基础搭配，只有1个宠物，没有其他任何cdr装备，不动带护石
+
+cast_time: 指令触发到该技能开始cd的时间
+during: 技能开始cd到其他所有技能可用的时间
+force_next_skill_time: 技能开始cd到特定技能可用的时间
+force_cast_time: 在柔化中的技能的释放的时间
