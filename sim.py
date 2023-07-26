@@ -150,14 +150,8 @@ class Sim:
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
         return skill.cast_time + skill.during
 
-    def _choice_skill(self, skill_status: SkillStatus, choice_type: str):
-        if choice_type == 'random':
-            return self._random_a_skill(skill_status)
-        elif choice_type == 'heuristic':
-            return self._heuristic_choice_a_skill(skill_status)
-
-    def _heuristic_choice_a_skill(self, skill_status:SkillStatus):
-
+    def _heuristic_choice_a_skill(self, skill_status: SkillStatus):
+        pass
 
     @staticmethod
     def _random_a_skill(skill_status: SkillStatus):
@@ -181,7 +175,11 @@ class Sim:
         else:
             return 0.0
 
-    def sim_best_skill_queue(self, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: float):
+    def sim_best_skill_queue_by_bagproblem(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
+        # 获取起始技能
+        for start_skill in skill_info
+
+    def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
         skill_status = self._create_skill_status(skill_info)
         time_line = 0
         force_skill_info = None
@@ -189,7 +187,7 @@ class Sim:
         skill_queue = []
         while True:
             # 随机选择一个技能
-            wait_time, skill = self._choice_skill(skill_status, choice_type)
+            wait_time, skill = self._random_a_skill(skill_status)
             # wait_time, skill_name = self._get_a_skill(skill_status)
             # skill = skill_info[skill_name]
 
@@ -232,8 +230,9 @@ class Sim:
             if self._debug:
                 print('---------------------------------------------')
 
-            skill_queue = self.sim_best_skill_queue(choice_type=choice_type, skill_info=skill_info, is_op=is_op,
-                                                    total_time=total_time)
+            # skill_queue = self.sim_best_skill_queue_by_random(skill_info=skill_info, is_op=is_op, total_time=total_time)
+            skill_queue = self.sim_
+
             damage = skill_queue.compute_total_damage()
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
