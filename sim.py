@@ -183,10 +183,12 @@ class Sim:
         else:
             return 0.0
 
-    def _search_best_skill(self, ):
+    def _search_best_skill(self, strategy:str, ):
+        if strategy == 'next_biggest':
+
 
     def sim_best_skill_queue_by_search(self, start_skill: Skill, skill_info: Dict[str, Skill], is_op: bool,
-                                       total_time: float, search_type:str):
+                                       total_time: float, search_strategy:str):
         skill_status = self._create_skill_status(skill_info)
         time_line = 0
         start = True
@@ -202,9 +204,9 @@ class Sim:
                 all_skills = skill_status.return_all_skills()
                 if next_skill_name:
                     curr_skill = all_skills[next_skill_name]
-
-                # 根据策略，选择最优技能
-                self._search_best_skill()
+                else:
+                    # 根据策略，选择最优技能
+                    self._search_best_skill(search_strategy)
 
 
 
