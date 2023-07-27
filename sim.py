@@ -44,6 +44,14 @@ class SkillStatus:
                 result[res_cd].append(self._skill_info[skill_name])
         return result
 
+    def return_all_skills(self) -> Dict[str, Dict[str, Union[float, Skill]]]:
+        result = {}
+        for skill_name in self._skill_status_map:
+            res_cd = self._skill_status_map[skill_name]['res_cd']
+            skill = self._skill_info[skill_name]
+            result[skill_name] = {'res_cd': res_cd, 'skill': skill}
+        return result
+
     def start_cooling_down(self, skill_name: str, cd: float):
         self._skill_status_map[skill_name]['res_cd'] = cd
 
@@ -150,14 +158,15 @@ class Sim:
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
         return skill.cast_time + skill.during
 
-    def _choice_skill(self, skill_status: SkillStatus, choice_type: str):
+    def _choice_skill(self, skill_status: SkillStatus, choice_type: str, res_time_line: float):
         if choice_type == 'random':
             return self._random_a_skill(skill_status)
         elif choice_type == 'heuristic':
-            return self._heuristic_choice_a_skill(skill_status)
+            return self._heuristic_choice_a_skill(skill_status, res_time_line)
 
-    def _heuristic_choice_a_skill(self, skill_status:SkillStatus):
-
+    def _heuristic_choice_a_skill(self, skill_status: SkillStatus, res_time_line: float):
+        all_skills = skill_status.return_all_skills()
+        # last
 
     @staticmethod
     def _random_a_skill(skill_status: SkillStatus):
@@ -188,6 +197,8 @@ class Sim:
 
         skill_queue = []
         while True:
+            res_time_line = total_time - self._bias - time_line
+
             # 随机选择一个技能
             wait_time, skill = self._choice_skill(skill_status, choice_type)
             # wait_time, skill_name = self._get_a_skill(skill_status)

@@ -1,19 +1,27 @@
-from itertools import combinations, product, permutations
+def knapSack(W, wt, val, n):
+    K = [[0 for w in range(W + 1)]
+         for i in range(n + 1)]
 
-colors = ['red', 'blue', 'purple']
-fuwen_skill_sets = ['呀呀呀', '不动', '炸热']
-# 将每个技能都复制3个
-fuwen_skill_pool = [x for x in fuwen_skill_sets for i in range(3)]
-print(fuwen_skill_pool)
+    # Build table K[][] in bottom
+    # up manner
+    for i in range(n + 1):
+        for w in range(W + 1):
+            if i == 0 or w == 0:
+                K[i][w] = 0
+            elif wt[i - 1] <= w:
+                K[i][w] = max(val[i - 1]
+                              + K[i - 1][w - wt[i - 1]],
+                              K[i - 1][w])
+            else:
+                K[i][w] = K[i - 1][w]
 
-fuwen_result = []
-for fuwen_skill_set in set(combinations(fuwen_skill_pool, 3)):
-    # 求该set的排列，并与color 11对应生成符文组合
-    for fuwen_set in set(permutations(fuwen_skill_set, 3)):
-        case = {}
-        for i in range(len(colors)):
-            color = colors[i]
-            skill = fuwen_set[i]
-            case[color] = {skill: 3}
-        fuwen_result.append(case)
-print(fuwen_result)
+    return K[n][W]
+
+
+# Driver code
+val = [60, 100, 120]
+wt = [10, 20, 30]
+W = 50
+n = len(val)
+
+print(knapSack(W, wt, val, n))
