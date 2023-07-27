@@ -158,15 +158,8 @@ class Sim:
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
         return skill.cast_time + skill.during
 
-    def _choice_skill(self, skill_status: SkillStatus, choice_type: str, res_time_line: float):
-        if choice_type == 'random':
-            return self._random_a_skill(skill_status)
-        elif choice_type == 'heuristic':
-            return self._heuristic_choice_a_skill(skill_status, res_time_line)
-
-    def _heuristic_choice_a_skill(self, skill_status: SkillStatus, res_time_line: float):
-        all_skills = skill_status.return_all_skills()
-        # last
+    def _heuristic_choice_a_skill(self, skill_status: SkillStatus):
+        pass
 
     @staticmethod
     def _random_a_skill(skill_status: SkillStatus):
@@ -190,17 +183,49 @@ class Sim:
         else:
             return 0.0
 
-    def sim_best_skill_queue(self, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: float):
+    def _search_best_skill(self, ):
+
+    def sim_best_skill_queue_by_search(self, start_skill: Skill, skill_info: Dict[str, Skill], is_op: bool,
+                                       total_time: float, search_type:str):
+        skill_status = self._create_skill_status(skill_info)
+        time_line = 0
+        start = True
+        next_skill_name = None
+        while True:
+            res_time = total_time - self._bias - time_line
+
+            # 获取待选技能
+            if start:
+                start = False
+                curr_skill = start_skill
+            else:
+                all_skills = skill_status.return_all_skills()
+                if next_skill_name:
+                    curr_skill = all_skills[next_skill_name]
+
+                # 根据策略，选择最优技能
+                self._search_best_skill()
+
+
+
+            # 执行技能
+            action_time = self._action(curr_skill, skill_status, is_op)
+
+            # 广播cd
+
+
+
+
+
+    def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
         skill_status = self._create_skill_status(skill_info)
         time_line = 0
         force_skill_info = None
 
         skill_queue = []
         while True:
-            res_time_line = total_time - self._bias - time_line
-
             # 随机选择一个技能
-            wait_time, skill = self._choice_skill(skill_status, choice_type)
+            wait_time, skill = self._random_a_skill(skill_status)
             # wait_time, skill_name = self._get_a_skill(skill_status)
             # skill = skill_info[skill_name]
 
@@ -237,14 +262,14 @@ class Sim:
 
         return SkillQueue(skill_queue, total_time)
 
-    def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int):
+    def _random_sim(self, epochs: int, skill_info: Dict[str, Skill], is_op: bool, total_time: int) -> Dict:
         max_skill_queue = {'damage': 0}
         for i in tqdm.tqdm(range(epochs), desc='开始进行最优技能模拟'):
             if self._debug:
                 print('---------------------------------------------')
 
-            skill_queue = self.sim_best_skill_queue(choice_type=choice_type, skill_info=skill_info, is_op=is_op,
-                                                    total_time=total_time)
+            skill_queue = self.sim_best_skill_queue_by_random(skill_info=skill_info, is_op=is_op, total_time=total_time)
+
             damage = skill_queue.compute_total_damage()
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
@@ -256,6 +281,21 @@ class Sim:
                 print()
 
         return max_skill_queue
+
+    def _search_sim(self, skill_info: Dict[str, Skill], is_op: bool, total_time: int) -> Dict:
+        max_skill_queue = {'damage': 0}
+
+        # 遍历起始技能
+        for skill_name, start_skill in skill_info.items():
+            self.sim_best_skill_queue_by_search(start_skill=start_skill, skill_info=skill_info, is_op=is_op,
+                                                total_time=total_time)
+
+    def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int):
+        if choice_type == 'random':
+            return self._random_sim(epochs=epochs, skill_info=skill_info, is_op=is_op, total_time=total_time)
+
+        if choice_type == 'search':
+            return self._search_sim(skill_info=skill_info, is_op=is_op, total_time=total_time)
 
     @staticmethod
     def _create_fuwen_skill_set(fuwen_skill_sets: List):
