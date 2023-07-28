@@ -8,54 +8,10 @@ import pandas as pd
 import tqdm
 import matplotlib.pyplot as plt
 
-from skill import Skill, SkillQueue
+from search import Search
+from skill import Skill, SkillQueue, SkillStatus
 
 DATA_PATH = 'data'
-
-
-class SkillStatus:
-    def __init__(self, skill_info: Dict):
-        # {"炸热":{"res_cd":0.4,"cnt":1}}
-        self._skill_status_map = self._init_status_map(skill_info)
-
-    def _init_status_map(self, skill_info: Dict) -> Dict[str, Dict[str, Union[float, int]]]:
-        result = {}
-        for skill_name in skill_info:
-            case = {'res_cd': 0.0, "cnt": 0}
-            result[skill_info[skill_name].name] = case
-        return result
-
-    def get_status_by_name(self, skill_name: str):
-        skill_status = self._skill_status_map[skill_name]
-        return skill_status
-
-    def get_all_status(self):
-        return self._skill_status_map
-
-    def cooling_down(self, ts: float, except_skill_name: str):
-        for skill_name in self._skill_status_map:
-            if skill_name != except_skill_name:
-                current_res_cd = self._skill_status_map[skill_name]['res_cd']
-                self._skill_status_map[skill_name]['res_cd'] = max(current_res_cd - ts, 0)
-
-    def find_almost_available_skills(self) -> Dict[float, List[str]]:
-        result = {}
-        diff_cds = 99999
-        for skill_name in self._skill_status_map:
-            res_cd = self._skill_status_map[skill_name]['res_cd']
-            if res_cd < diff_cds:
-                result = {res_cd: [skill_name]}
-                diff_cds = res_cd
-            elif res_cd == diff_cds:
-                result[res_cd].append(skill_name)
-        return result
-
-    def start_cooling_down(self, skill_name: str, cd: float):
-        self._skill_status_map[skill_name]['res_cd'] = cd
-
-    def add_skill_cnt(self, skill_name: str, cnt) -> int:
-        self._skill_status_map[skill_name]['cnt'] += cnt
-        return self._skill_status_map[skill_name]['cnt']
 
 
 class Sim:
@@ -64,6 +20,7 @@ class Sim:
         self._bias = bias
         self._human_refletion = human_refletion
         self._debug = debug
+        self._search = Search()
 
     # def run_with_time(self, skill_dict: Dict, cdr_info_json: Dict, time: int):
     #     # 先根据skill list和cdr_info_json生成对应技能的cdr
@@ -156,9 +113,6 @@ class Sim:
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
         return skill.action_time
 
-    def _heuristic_choice_a_skill(self, skill_status: SkillStatus):
-        pass
-
     @staticmethod
     def _random_a_skill(skill_status: SkillStatus):
         aval_skill_names = skill_status.find_almost_available_skills()
@@ -181,22 +135,6 @@ class Sim:
         else:
             return 0.0
 
-    def _search_best_skill(self, strategy: str, skill_info: Dict[str, Skill], skill_status: SkillStatus,
-                           res_time_line: float):
-        all_status = skill_status.get_all_status()
-        if strategy == 'res_cd':
-            sorted_skill_status_list = sorted(all_status.items(), key=lambda x: x[1]['res_cd'], reverse=True)
-            return sorted_skill_status_list[0]
-        elif strategy == 'damage_by_past_time':
-            [for skill_name,  in all_status.items()]
-        elif strategy == 'dps_by_past_time':
-            pass
-
-        if all_skill_list:
-            return all_skill_list[0]
-        else:
-            raise Exception(f'没有该技能选择策略：{strategy} 或 返回可用技能为空')
-
     def sim_best_skill_queue_by_search(self, start_skill: Skill, skill_info: Dict[str, Skill], is_op: bool,
                                        total_time: float, search_strategy: str):
         skill_status = self._create_skill_status(skill_info)
@@ -206,22 +144,22 @@ class Sim:
         while True:
             res_time = total_time - self._bias - time_line
 
-            # 获取待选技能
+            # 获取待选技能列表
+            curr_skill_list = []
             if start:
                 start = False
-                curr_skill = start_skill
+                curr_skill_list.append(start_skill)
             else:
                 if next_force_skill_name:
-                    curr_skill = skill_info[next_force_skill_name]
-                    # 执行技能
-                    action_time = self._action(curr_skill, skill_status, is_op)
-                else:
+                    curr_skill_list.append(skill_info[next_force_skill_name])
+
                     # 根据策略，选择最优技能
-                    curr_skill = self._search_best_skill(search_strategy, skill_status, res_time)
-
-
-
-
+                    best_skill_name_list = self._search.search_best_skill(strategy=search_strategy,
+                                                                          skill_info=skill_info,
+                                                                          skill_status=skill_status, is_op=is_op)
+                    # 从技能组中挑选出在剩余时间内可以释放的技能
+                    for best_skill_name in best_skill_name_list:
+                        skill = skill_info[best_skill_name]
 
             # 广播cd
 
@@ -324,11 +262,6 @@ class Sim:
                 fuwen_result.append(case)
 
         return fuwen_result
-        #
-        # # 然后对每个技能分别抽取3红，3蓝，3紫
-        # red_sets = set(combinations(fuwen_skill_pool, 3))
-        # blue_sets = set(combinations(fuwen_skill_pool, 3))
-        # purp_sets = set(combinations(fuwen_skill_pool, 3))
 
     def run(self, epochs: int, set_file_name: str, stone_sets: List, skill_sets: List, choice_type: str,
             time_range: Tuple, step: int, op_info: List[bool], fuwen_info_list: Dict = None):
