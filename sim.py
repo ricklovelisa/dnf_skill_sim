@@ -15,16 +15,22 @@ DATA_PATH = 'data'
 
 class SkillStatus:
     def __init__(self, skill_info: Dict):
-        # {"炸热":{"rest_cd":0.4,"cnt":1}}
+        # {"炸热":{"res_cd":0.4,"cnt":1}}
         self._skill_status_map = self._init_status_map(skill_info)
-        self._skill_info = skill_info
 
-    def _init_status_map(self, skill_info: Dict):
+    def _init_status_map(self, skill_info: Dict) -> Dict[str, Dict[str, Union[float, int]]]:
         result = {}
         for skill_name in skill_info:
             case = {'res_cd': 0.0, "cnt": 0}
             result[skill_info[skill_name].name] = case
         return result
+
+    def get_status_by_name(self, skill_name: str):
+        skill_status = self._skill_status_map[skill_name]
+        return skill_status
+
+    def get_all_status(self):
+        return self._skill_status_map
 
     def cooling_down(self, ts: float, except_skill_name: str):
         for skill_name in self._skill_status_map:
@@ -32,24 +38,16 @@ class SkillStatus:
                 current_res_cd = self._skill_status_map[skill_name]['res_cd']
                 self._skill_status_map[skill_name]['res_cd'] = max(current_res_cd - ts, 0)
 
-    def find_almost_available_skills(self) -> Dict[float, List[Skill]]:
+    def find_almost_available_skills(self) -> Dict[float, List[str]]:
         result = {}
         diff_cds = 99999
         for skill_name in self._skill_status_map:
             res_cd = self._skill_status_map[skill_name]['res_cd']
             if res_cd < diff_cds:
-                result = {res_cd: [self._skill_info[skill_name]]}
+                result = {res_cd: [skill_name]}
                 diff_cds = res_cd
             elif res_cd == diff_cds:
-                result[res_cd].append(self._skill_info[skill_name])
-        return result
-
-    def return_all_skills(self) -> Dict[str, Dict[str, Union[float, Skill]]]:
-        result = {}
-        for skill_name in self._skill_status_map:
-            res_cd = self._skill_status_map[skill_name]['res_cd']
-            skill = self._skill_info[skill_name]
-            result[skill_name] = {'res_cd': res_cd, 'skill': skill}
+                result[res_cd].append(skill_name)
         return result
 
     def start_cooling_down(self, skill_name: str, cd: float):
@@ -156,20 +154,20 @@ class Sim:
         skill_status.start_cooling_down(skill.name, real_cd)
 
         # 返回本次执行技能的耗时，需要同时考虑cast 和 during
-        return skill.cast_time + skill.during
+        return skill.action_time
 
     def _heuristic_choice_a_skill(self, skill_status: SkillStatus):
         pass
 
     @staticmethod
     def _random_a_skill(skill_status: SkillStatus):
-        aval_skills = skill_status.find_almost_available_skills()
-        wait_time = list(aval_skills.keys())[0]
-        skills = aval_skills[wait_time]
-        if len(skills) == 1:
-            return wait_time, skills[0]
+        aval_skill_names = skill_status.find_almost_available_skills()
+        wait_time = list(aval_skill_names.keys())[0]
+        skill_names = aval_skill_names[wait_time]
+        if len(skill_names) == 1:
+            return wait_time, skill_names[0]
         else:
-            return wait_time, random.choice(skills)
+            return wait_time, random.choice(skill_names)
 
     @staticmethod
     def _force_process(last_skill_force_info: Skill, current_skill: Skill) -> float:
@@ -183,16 +181,28 @@ class Sim:
         else:
             return 0.0
 
-    def _search_best_skill(self, strategy:str, ):
-        if strategy == 'next_biggest':
+    def _search_best_skill(self, strategy: str, skill_info: Dict[str, Skill], skill_status: SkillStatus,
+                           res_time_line: float):
+        all_status = skill_status.get_all_status()
+        if strategy == 'res_cd':
+            sorted_skill_status_list = sorted(all_status.items(), key=lambda x: x[1]['res_cd'], reverse=True)
+            return sorted_skill_status_list[0]
+        elif strategy == 'damage_by_past_time':
+            [for skill_name,  in all_status.items()]
+        elif strategy == 'dps_by_past_time':
+            pass
 
+        if all_skill_list:
+            return all_skill_list[0]
+        else:
+            raise Exception(f'没有该技能选择策略：{strategy} 或 返回可用技能为空')
 
     def sim_best_skill_queue_by_search(self, start_skill: Skill, skill_info: Dict[str, Skill], is_op: bool,
-                                       total_time: float, search_strategy:str):
+                                       total_time: float, search_strategy: str):
         skill_status = self._create_skill_status(skill_info)
         time_line = 0
         start = True
-        next_skill_name = None
+        next_force_skill_name = None
         while True:
             res_time = total_time - self._bias - time_line
 
@@ -201,23 +211,19 @@ class Sim:
                 start = False
                 curr_skill = start_skill
             else:
-                all_skills = skill_status.return_all_skills()
-                if next_skill_name:
-                    curr_skill = all_skills[next_skill_name]
+                if next_force_skill_name:
+                    curr_skill = skill_info[next_force_skill_name]
+                    # 执行技能
+                    action_time = self._action(curr_skill, skill_status, is_op)
                 else:
                     # 根据策略，选择最优技能
-                    self._search_best_skill(search_strategy)
+                    curr_skill = self._search_best_skill(search_strategy, skill_status, res_time)
 
 
 
-            # 执行技能
-            action_time = self._action(curr_skill, skill_status, is_op)
+
 
             # 广播cd
-
-
-
-
 
     def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
         skill_status = self._create_skill_status(skill_info)
@@ -227,9 +233,8 @@ class Sim:
         skill_queue = []
         while True:
             # 随机选择一个技能
-            wait_time, skill = self._random_a_skill(skill_status)
-            # wait_time, skill_name = self._get_a_skill(skill_status)
-            # skill = skill_info[skill_name]
+            wait_time, skill_name = self._random_a_skill(skill_status)
+            skill = skill_info[skill_name]
 
             # 判断是否为柔化技能
             force_time_reduce = self._force_process(force_skill_info, skill)
@@ -284,20 +289,22 @@ class Sim:
 
         return max_skill_queue
 
-    def _search_sim(self, skill_info: Dict[str, Skill], is_op: bool, total_time: int) -> Dict:
+    def _search_sim(self, skill_info: Dict[str, Skill], is_op: bool, total_time: int, search_strategy: str) -> Dict:
         max_skill_queue = {'damage': 0}
 
         # 遍历起始技能
         for skill_name, start_skill in skill_info.items():
             self.sim_best_skill_queue_by_search(start_skill=start_skill, skill_info=skill_info, is_op=is_op,
-                                                total_time=total_time)
+                                                total_time=total_time, search_strategy=search_strategy)
 
-    def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int):
+    def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int,
+            search_strategy: str = None):
         if choice_type == 'random':
             return self._random_sim(epochs=epochs, skill_info=skill_info, is_op=is_op, total_time=total_time)
 
         if choice_type == 'search':
-            return self._search_sim(skill_info=skill_info, is_op=is_op, total_time=total_time)
+            return self._search_sim(skill_info=skill_info, is_op=is_op, total_time=total_time,
+                                    search_strategy=search_strategy)
 
     @staticmethod
     def _create_fuwen_skill_set(fuwen_skill_sets: List):

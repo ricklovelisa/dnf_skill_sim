@@ -39,6 +39,10 @@ class Skill:
         return self._cast_time
 
     @property
+    def action_time(self) -> float:
+        return self._cast_time + self._during
+
+    @property
     def during(self) -> float:
         return self._during
 
