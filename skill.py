@@ -190,15 +190,44 @@ class SkillStatus:
 
 
 class SkillAction:
-    def generate_skill_actions(self, skill_info: Dict[str, Skill], skill_status: SkillStatus):
-        skill_actions = []
-        for skill_name, Skill in skill_info.items():
-            # {"res_cd":0.4,"cnt":1}
-            status = skill_status.get_status_by_name(skill_name)
 
+    def __init__(self, skill_info: Dict[str, Skill]):
+        self._skill_list_with_force_skill_set = self._make_force_set(skill_info)
+
+    def _deep_search_force_skill(self, skill: Skill, skill_info: Dict[str, Skill], force_skill_set: List):
+        if skill.force_next_skill_time:
+            for next_skill_name, force_time in skill.force_next_skill_time.items():
+                force_skill_set.append(skill.name)
+                next_skill = skill_info[next_skill_name]
+                self._deep_search_force_skill(skill=next_skill, skill_info=skill_info, force_skill_set=force_skill_set)
+        else:
+            force_skill_set.append(skill.name)
+
+    def _make_force_set(self, skill_info: Dict[str, Skill]):
+        result = []
+        # 针对有柔化技能的技能进行遍历，获得柔化技能组
+        for skill_name, skill in skill_info.items():
+            skill_set = []
+            self._deep_search_force_skill(skill=skill, skill_info=skill_info, force_skill_set=skill_set)
+            # 校验skill_set
+            force_skill_set = [skill_set[0]]
+            for i in range(1, len(skill_set)):
+                if skill_set[i] in
+
+    # def generate_skill_actions(self, skill_info: Dict[str, Skill], skill_status: SkillStatus):
+    #     skill_actions = []
+    #     for skill_name, skill in skill_info.items():
+    #         # 获取技能cd状态 {"res_cd":0.4,"cnt":1}
+    #         status = skill_status.get_status_by_name(skill_name)
+    #
+    #         if skill.force_next_skill_time:
+    #             force_skill_set = self._make_force_set(start)
 
 
 if __name__ == '__main__':
-    with open('C:/Users/QQ/PycharmProjects/阿修罗技能测试/data/basic_set/skill_info.json', 'r', encoding='utf_8') as f:
-        for skill_name, skill_info in json.load(f).items():
-            print(Skill(skill_name, skill_info).detail)
+    skill_info = {}
+    with open('/Users/qq/WorkSpace/python_project/dnf_skill_sim/data/test_sim_set/skill_info.json', 'r', encoding='utf_8') as f:
+        for skill_name, skill in json.load(f).items():
+            skill_info[skill_name] = Skill(skill_name, skill)
+
+    sa = SkillAction(skill_info)

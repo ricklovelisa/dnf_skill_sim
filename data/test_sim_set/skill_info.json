@@ -50,6 +50,7 @@
     "cast_time": 0,
     "during": 0.32,
     "force_next_skill_time": {
+      "波爆": 0.257,
       "无双": 0.257
     }
   },

@@ -9,7 +9,7 @@ import tqdm
 import matplotlib.pyplot as plt
 
 from search import Search
-from skill import Skill, SkillQueue
+from skill import Skill, SkillQueue, SkillStatus
 
 DATA_PATH = 'data'
 
@@ -262,11 +262,6 @@ class Sim:
                 fuwen_result.append(case)
 
         return fuwen_result
-        #
-        # # 然后对每个技能分别抽取3红，3蓝，3紫
-        # red_sets = set(combinations(fuwen_skill_pool, 3))
-        # blue_sets = set(combinations(fuwen_skill_pool, 3))
-        # purp_sets = set(combinations(fuwen_skill_pool, 3))
 
     def run(self, epochs: int, set_file_name: str, stone_sets: List, skill_sets: List, choice_type: str,
             time_range: Tuple, step: int, op_info: List[bool], fuwen_info_list: Dict = None):
