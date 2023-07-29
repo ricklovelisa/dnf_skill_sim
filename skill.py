@@ -189,10 +189,40 @@ class SkillStatus:
         return self._skill_status_map[skill_name]['cnt']
 
 
+class SkillActionSet:
+    def __init__(self, human_reflection: float, skill_set: List[Skill]):
+        self._skill_set = skill_set
+        self._human_reflection = human_reflection
+
+    def exec_without_updating_skill_status(self, skill_status: SkillStatus):
+        # 执行技能组，并返回该技能组的总体past_time, total_damage
+        # past_time = 各个技能的wait_time + action_time - force_reduce_time
+
+        if len(self._skill_set) > 1:
+            past_time = 0
+            for i in range(len(self._skill_set)):
+                skill = self._skill_set[i]
+
+                # 如果有下一个柔化技能，则action_time直接使用柔化时间
+                if i + 2 <= len(self._skill_set):
+                    next_skill = self._skill_set[i + 1]
+                    force_action_time = skill.force_next_skill_time[next_skill.name]
+
+
+        else:
+            skill = self._skill_set[0]
+            status = skill_status.get_status_by_name(skill.name)
+            res_cd = status['res_cd']
+            return res_cd + skill.action_time, skill.damage
+
+    def exec(self, human_reflection: float, skill_status: SkillStatus):
+
+
 class SkillAction:
 
     def __init__(self, skill_info: Dict[str, Skill]):
-        self._skill_list_with_force_skill_set = self._make_force_set(skill_info)
+        self._skill_list_with_force_skill_set: List[SkillActionSet] = self._make_force_set(skill_info)
+        self._human_reflection
 
     def _deep_search_force_skill(self, skill: Skill, skill_info: Dict[str, Skill], path: List = None):
         if path is None:
@@ -215,16 +245,20 @@ class SkillAction:
     def _make_force_set(self, skill_info: Dict[str, Skill]):
         result = []
         # 针对有柔化技能的技能进行遍历，获得柔化技能组
-        for skill_name, skill in skill_info.items():
+        for _, skill in skill_info.items():
             result.extend(self._deep_search_force_skill(skill=skill, skill_info=skill_info))
 
-        return result
+        return [SkillActionSet(x) for x in result]
 
-    def run(self, skill_info: Dict[str, Skill], skill_status: SkillStatus):
+    def _single_skill_action(self, skill: Skill, ):
+        return skill.action_time,
+
+    def exec(self, skill_status: SkillStatus):
         skill_actions = []
-        for skill_name, skill in skill_info.items():
+        for skill_set in self._skill_list_with_force_skill_set:
             # 获取技能cd状态 {"res_cd":0.4,"cnt":1}
-            status = skill_status.get_status_by_name(skill_name)
+            for skill in skill_set:
+                status = skill_status.get_status_by_name(skill_name)
 
             if skill.force_next_skill_time:
                 force_skill_set = self._make_force_set(start)
