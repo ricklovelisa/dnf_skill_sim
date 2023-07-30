@@ -4,10 +4,9 @@ from typing import List, Dict
 import matplotlib.pyplot as plt
 import numpy as np
 
-from cdr import parse_cdr_info
-from skill import Skill
+from core.skill import Skill
 
-DATA_PATH = 'data'
+DATA_PATH = '../../data'
 
 
 class Calc:

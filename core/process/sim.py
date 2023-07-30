@@ -1,17 +1,14 @@
 import json
-import os
 import random
 from itertools import combinations, permutations
 from typing import List, Dict, Union, Tuple
 
-import pandas as pd
 import tqdm
-import matplotlib.pyplot as plt
 
 from search import Search
-from skill import Skill, SkillQueue, SkillStatus
+from core.skill import Skill, SkillQueue, SkillStatus
 
-DATA_PATH = 'data'
+DATA_PATH = '../../data'
 
 
 class Sim:
