@@ -10,6 +10,8 @@ class SkillSet:
     """ 该类用于描述一些职业的所有的可执行技能组合，这些组合包括单个技能，以及多个相互间可柔化技能。
 
     例如[炸热、无双、不动]或[无为法]
+
+    构建本对象，是为了方便进行针对技能组的数据统计，例如技能组的总伤，总耗时，总dps等
     """
 
     def __init__(self, human_reflection: float, skill_set: List[Skill]):
@@ -36,7 +38,7 @@ class SkillSet:
     @staticmethod
     def parse(skill_set: List[Skill], human_reflection=0.1):
         if len(skill_set) == 1:
-            return SingleSkillSet(skill_set=skill_set, human_reflection=human_reflection)
+            return SingleSkill(skill_set=skill_set, human_reflection=human_reflection)
         elif len(skill_set) >= 2:
             return ForcedSkillSet(skill_set=skill_set, human_reflection=human_reflection)
         else:
@@ -44,21 +46,25 @@ class SkillSet:
 
 
 class SingleSkill(SkillSet):
-    """ 单技能Set
-
+    """ 单技能Set，等价于单个技能
     """
+
+    def __init__(self, human_reflection: float, skill_set: List[Skill]):
+        super().__init__(human_reflection, skill_set)
+        self._status_info = {}
 
     def compute_past_and_damage(self, skill_status: SkillStatus):
         skill = self._skill_set[0]
         status = skill_status.get_status_by_name(skill.name)
         res_cd = status['res_cd']
-        return self._human_reflection + res_cd + skill.action_time, skill.damage
+        return res_cd + self._human_reflection + skill.action_time, skill.damage
 
     def execution(self, skill_status: SkillStatus):
         pass
 
+
 class ForcedSkillSet(SkillSet):
-    """ 多个有柔化技能的组合
+    """ 多个有柔化技能的组合，在进行相关计算的时候
 
     """
 
