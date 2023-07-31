@@ -23,7 +23,7 @@ class SkillSet:
         """ 计算该技能组根据实际skill_status下的past_time和总伤
 
         :param skill_status:
-        :return:
+        :return: past_time, total_damage
         """
         pass
 
@@ -57,7 +57,12 @@ class SingleSkill(SkillSet):
         skill = self._skill_set[0]
         status = skill_status.get_status_by_name(skill.name)
         res_cd = status['res_cd']
-        return res_cd + self._human_reflection + skill.action_time, skill.damage
+        past_time = res_cd + self._human_reflection + skill.action_time
+
+        # 记录开始记录cd的时间
+        self._status_info[skill.name] = {
+            'final_cd': res_cd + self._human_reflection + skill.cast_time + skill.get_final_cd(), 'cnt': 1}
+        return past_time, skill.damage
 
     def execution(self, skill_status: SkillStatus):
         pass
