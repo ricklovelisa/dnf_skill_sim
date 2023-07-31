@@ -19,16 +19,17 @@ class SkillSet:
         self._human_reflection = human_reflection
 
     @abstractmethod
-    def compute_past_and_damage(self, skill_status: SkillStatus):
+    def compute_past_and_damage(self, is_op: bool, skill_status: SkillStatus):
         """ 计算该技能组根据实际skill_status下的past_time和总伤
 
+        :param is_op:
         :param skill_status:
         :return: past_time, total_damage
         """
         pass
 
     @abstractmethod
-    def execution(self, skill_status: SkillStatus):
+    def execution(self, time_line: float, skill_status: SkillStatus):
         """ 执行，并更新skill_status中的技能cd和技能数
 
         :return:
@@ -52,20 +53,23 @@ class SingleSkill(SkillSet):
     def __init__(self, human_reflection: float, skill_set: List[Skill]):
         super().__init__(human_reflection, skill_set)
         self._status_info = {}
+        self._past_time = None
+        self._res_cd = None
 
-    def compute_past_and_damage(self, skill_status: SkillStatus):
+    def compute_past_and_damage(self, is_op: bool, skill_status: SkillStatus):
         skill = self._skill_set[0]
-        status = skill_status.get_status_by_name(skill.name)
-        res_cd = status['res_cd']
-        past_time = res_cd + self._human_reflection + skill.action_time
+        res_cd = skill_status.get_skill_res_cd(skill.name)
+        self._past_time = res_cd + self._human_reflection + skill.action_time
 
-        # 记录开始记录cd的时间
-        self._status_info[skill.name] = {
-            'final_cd': res_cd + self._human_reflection + skill.cast_time + skill.get_final_cd(), 'cnt': 1}
-        return past_time, skill.damage
+        # 记录本次技能的技能次数和
+        skill_cnt = skill_status.get_skill_cnt(skill.name) + 1
+        next_skill_res_cd = skill.get_final_cd(is_op, skill_cnt)
+        self._status_info[skill.name] = {'past_cd': next_skill_res_cd - skill.during, 'add_cnt': 1}
+        return self._past_time, skill.damage
 
-    def execution(self, skill_status: SkillStatus):
-        pass
+    def execution(self, time_line: float, skill_status: SkillStatus):
+        # 本次技能组的技能进入cd，res_cd是实际
+        skill_status.start_cooling_down()
 
 
 class ForcedSkillSet(SkillSet):

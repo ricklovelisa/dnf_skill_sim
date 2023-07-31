@@ -1,7 +1,5 @@
 from typing import Dict, Union
 
-from core.skill import Skill, SkillStatus
-
 
 class Search:
 

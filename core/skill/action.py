@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 
 class SkillStatus:
@@ -13,12 +13,12 @@ class SkillStatus:
             result[skill_info[skill_name].name] = case
         return result
 
-    def get_status_by_name(self, skill_name: str):
-        skill_status = self._skill_status_map[skill_name]
-        return skill_status
-
-    def get_all_status(self):
-        return self._skill_status_map
+    # def get_status_by_name(self, skill_name: str):
+    #     skill_status = self._skill_status_map[skill_name]
+    #     return skill_status
+    #
+    # def get_all_status(self):
+    #     return self._skill_status_map
 
     def cooling_down(self, ts: float, except_skill_name: str):
         for skill_name in self._skill_status_map:
@@ -41,8 +41,14 @@ class SkillStatus:
     def start_cooling_down(self, skill_name: str, cd: float):
         self._skill_status_map[skill_name]['res_cd'] = cd
 
+    def get_skill_cnt(self, skill_name: str):
+        return self._skill_status_map[skill_name]['cnt']
+
     def add_skill_cnt(self, skill_name: str, cnt) -> int:
         self._skill_status_map[skill_name]['cnt'] += cnt
+        return self._skill_status_map[skill_name]['cnt']
+
+    def get_skill_res_cd(self, skill_name):
         return self._skill_status_map[skill_name]['cnt']
 
 
