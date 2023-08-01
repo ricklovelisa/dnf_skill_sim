@@ -61,15 +61,20 @@ class SingleSkill(SkillSet):
         res_cd = skill_status.get_skill_res_cd(skill.name)
         self._past_time = res_cd + self._human_reflection + skill.action_time
 
-        # 记录本次技能的技能次数和
+        # 记录本次技能的技能次数和技能剩余cd
         skill_cnt = skill_status.get_skill_cnt(skill.name) + 1
         next_skill_res_cd = skill.get_final_cd(is_op, skill_cnt)
         self._status_info[skill.name] = {'past_cd': next_skill_res_cd - skill.during, 'add_cnt': 1}
+        #
+
         return self._past_time, skill.damage
 
     def execution(self, time_line: float, skill_status: SkillStatus):
-        # 本次技能组的技能进入cd，res_cd是实际
-        skill_status.start_cooling_down()
+        # 本次技能组的技能进入cd，res_cd是实际剩余的cd数
+        skill_status.start_cooling_down(self._skill_set[0].name, self._res_cd)
+
+        # 其他技能进行cd
+        skill_status.cooling_down()
 
 
 class ForcedSkillSet(SkillSet):
