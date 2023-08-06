@@ -5,8 +5,10 @@ from typing import List, Dict, Union, Tuple
 
 import tqdm
 
+from core.skill.action import SkillStatus, SkillAction, SkillSet
+from core.skill.definition import Skill
+from core.skill.queue import SkillQueue
 from search import Search
-from core.skill import Skill, SkillQueue, SkillStatus
 
 DATA_PATH = '../../data'
 
@@ -132,33 +134,40 @@ class Sim:
         else:
             return 0.0
 
-    def sim_best_skill_queue_by_search(self, start_skill: Skill, skill_info: Dict[str, Skill], is_op: bool,
-                                       total_time: float, search_strategy: str):
+    def sim_best_skill_queue_by_search(self, start_skill_set: SkillSet, skill_action: SkillAction,
+                                       skill_info: Dict[str, Skill], is_op: bool, total_time: float,
+                                       search_strategy: str) -> SkillQueue:
         skill_status = self._create_skill_status(skill_info)
         time_line = 0
-        start = True
-        next_force_skill_name = None
+
+        skill_queue = []
+        # 执行第一个技能
+        _, _, _ = start_skill_set.compute_past_and_damage(is_op, skill_status)
+        time_line = start_skill_set.execution(time_line, skill_status)
+        skill_queue.extend(start_skill_set.skills)
+
+        # 开始进行技能模拟
         while True:
             res_time = total_time - self._bias - time_line
+            if res_time <= 0:
+                break
 
-            # 获取待选技能列表
-            curr_skill_list = []
-            if start:
-                start = False
-                curr_skill_list.append(start_skill)
-            else:
-                if next_force_skill_name:
-                    curr_skill_list.append(skill_info[next_force_skill_name])
+            # 根据search_strategy，寻找下一个最优的skill_set
+            actions = skill_action.return_skill_set_with_skill_status(skill_status)
+            next_best_skill = self._search.search_best_skill(search_strategy, actions, res_time)
+            print('--------------------------------------------------')
+            print('当前skill_status:', skill_status)
+            print('下一个最优技能组是:', [x.name for x in next_best_skill.skills])
+            if next_best_skill is None:
+                break
+            skill_queue.extend(next_best_skill.skills)
+            # print('next_best_skill', [x.name for x in next_best_skill.skills])
+            time_line = next_best_skill.execution(time_line, skill_status)
+            print('执行最优技能后的skill_status:', skill_status)
+            print('--------------------------------------------------')
+            print()
 
-                    # 根据策略，选择最优技能
-                    best_skill_name_list = self._search.search_best_skill(strategy=search_strategy,
-                                                                          skill_info=skill_info,
-                                                                          skill_status=skill_status, is_op=is_op)
-                    # 从技能组中挑选出在剩余时间内可以释放的技能
-                    for best_skill_name in best_skill_name_list:
-                        skill = skill_info[best_skill_name]
-
-            # 广播cd
+        print([x.name for x in skill_queue])
 
     def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
         skill_status = self._create_skill_status(skill_info)
@@ -186,7 +195,7 @@ class Sim:
             time_line = time_line + past_time
 
             # 更新所有技能的cd状态，以供下一次循环时使用
-            skill_status.cooling_down(past_time, skill.name)
+            skill_status.cooling_down(past_time, [skill.name])
 
             # 更新柔化技能信息
             force_skill_info = skill
@@ -227,10 +236,19 @@ class Sim:
     def _search_sim(self, skill_info: Dict[str, Skill], is_op: bool, total_time: int, search_strategy: str) -> Dict:
         max_skill_queue = {'damage': 0}
 
-        # 遍历起始技能
-        for skill_name, start_skill in skill_info.items():
-            self.sim_best_skill_queue_by_search(start_skill=start_skill, skill_info=skill_info, is_op=is_op,
-                                                total_time=total_time, search_strategy=search_strategy)
+        # 生成skill_action
+        skill_action = SkillAction(skill_info=skill_info, human_reflection=self._human_refletion, is_op=is_op)
+
+        # 将每个技能组作为第一个技能，进行后续的搜索和模拟
+        for skill_set in skill_action.skill_sets:
+            skill_queue = self.sim_best_skill_queue_by_search(start_skill_set=skill_set, skill_action=skill_action,
+                                                              is_op=is_op, total_time=total_time, skill_info=skill_info,
+                                                              search_strategy=search_strategy)
+
+            damage = skill_queue.compute_total_damage()
+            if damage > max_skill_queue['damage']:
+                max_skill_queue['damage'] = damage
+                max_skill_queue['skill_queue'] = skill_queue
 
     def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int,
             search_strategy: str = None):
@@ -282,7 +300,7 @@ class Sim:
                                                             stone_set=stone_set, stone_skill_info=stone_skill_info,
                                                             fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
                             best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
-                                                        total_time=total_time, is_op=is_op)
+                                                        total_time=total_time, is_op=is_op, search_strategy='res_cd')
                             # print(f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
                             # print(f'当前搭配最高，是否手搓:{is_op}')
                             # print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
@@ -322,7 +340,7 @@ if __name__ == '__main__':
             stone_sets=['炸热', '呀呀呀', '不动'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-            choice_type='random',
+            choice_type='search',
             time_range=(40, 40),
             fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
             step=5,
