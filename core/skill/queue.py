@@ -12,8 +12,8 @@ class SkillQueue:
         damage_by_skill = self.compute_damage_by_skill()
 
         total_damage = 0
-        for skill_name, info in damage_by_skill.items():
-            total_damage += info['damage']
+        for item in damage_by_skill:
+            total_damage += item['damage']
         return total_damage
 
     def compute_damage_by_skill(self):
@@ -28,7 +28,10 @@ class SkillQueue:
             damage = skill.get_final_damage(self._total_time, damage_dict[skill.name]['times'])
             damage_dict[skill.name]['damage'] = damage
 
-        return damage_dict
+        damage_list = [{'name': k, 'times': v['times'], 'damage': v['damage']} for k, v in damage_dict.items()]
+        damage_list = sorted(damage_list, key=lambda x: x['damage'], reverse=True)
+
+        return damage_list
 
     @property
     def list(self):

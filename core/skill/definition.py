@@ -21,6 +21,12 @@ class Skill:
             self._damage_2 = float(skill_config_dict['damage_2'])
         self._cdr_info = cdr_info
 
+    def __str__(self):
+        return self.detail
+
+    def __repr__(self):
+        return self.detail
+
     @property
     def level(self) -> int:
         return self._level

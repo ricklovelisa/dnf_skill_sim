@@ -151,7 +151,7 @@ class Sim:
             res_time = total_time - self._bias - time_line
             if res_time <= 0:
                 break
-            print('--------------------------------------------------')
+            print(f'----------------------- start set: {start_skill_set} ---------------------------')
             # 根据search_strategy，寻找下一个最优的skill_set
             actions = skill_action.return_skill_set_with_skill_status(skill_status)
             next_best_skill = self._search.search_best_skill(search_strategy, actions, res_time)
@@ -170,6 +170,7 @@ class Sim:
             print()
 
         print([x.name for x in skill_queue])
+        return SkillQueue(skill_queue, total_time)
 
     def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
         skill_status = self._create_skill_status(skill_info)
@@ -240,6 +241,7 @@ class Sim:
 
         # 生成skill_action
         skill_action = SkillAction(skill_info=skill_info, human_reflection=self._human_refletion, is_op=is_op)
+        # print('skill_action: ', skill_action)
 
         # 将每个技能组作为第一个技能，进行后续的搜索和模拟
         for skill_set in skill_action.skill_sets:
@@ -248,9 +250,12 @@ class Sim:
                                                               search_strategy=search_strategy)
 
             damage = skill_queue.compute_total_damage()
+            print('start_set', skill_set, damage)
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
                 max_skill_queue['skill_queue'] = skill_queue
+
+        return max_skill_queue
 
     def sim(self, epochs: int, skill_info: Dict[str, Skill], choice_type: str, is_op: bool, total_time: int,
             search_strategy: str = None):

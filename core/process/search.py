@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Union, Tuple, List
 
 from core.skill.action import SkillSet
@@ -18,9 +19,13 @@ class Search:
 
     @staticmethod
     def _search_best_skill_by_res_cd(actions: List[Dict], res_time):
+        # print('actions:', actions)
         filtered_actions = [x for x in actions if len(x['skill_set'].skills) == 1 and res_time > x['past_time']]
 
+        # 如果有很多cd为0的技能，则按照damage/past_time来排序
+
         sorted_filtered_actions = sorted(filtered_actions, key=lambda x: x['res_cd'], reverse=False)
+        # print('sorted_filtered_actions: ', len(sorted_filtered_actions), sorted_filtered_actions)
         if len(sorted_filtered_actions) == 0:
             return None
         else:

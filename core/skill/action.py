@@ -68,6 +68,16 @@ class SkillAction:
         self._is_op = is_op
         self._skill_list_with_force_skill_set: List[SkillSet] = self._make_force_set(skill_info)
 
+    def __str__(self):
+        result = []
+        for skill_set in self._skill_list_with_force_skill_set:
+            result.append([x.name for x in skill_set.skills])
+        return json.dumps({'human_reflection': self._human_reflection, 'is_op': self._is_op,
+                           'skill_set': result}, ensure_ascii=False)
+
+    def __repr__(self):
+        return self.__str__()
+
     def _deep_search_force_skill(self, skill: Skill, skill_info: Dict[str, Skill], path: List = None):
         if path is None:
             path = []
@@ -91,6 +101,13 @@ class SkillAction:
         # 针对有柔化技能的技能进行遍历，获得柔化技能组
         for _, skill in skill_info.items():
             result.extend(self._deep_search_force_skill(skill=skill, skill_info=skill_info))
+
+        other_skills = []
+        for sets in result:
+            if len(sets) >= 2:
+                other_skills.extend(sets[0:-1])
+
+        result.extend([[x] for x in set(other_skills)])
 
         return [SkillSet.parse(x, self._human_reflection) for x in result]
 
@@ -129,6 +146,12 @@ class SkillSet:
         self._skill_set = skill_set
         self._human_reflection = human_reflection
 
+    def __str__(self):
+        return json.dumps([x.name for x in self._skill_set], ensure_ascii=False)
+
+    def __repr__(self):
+        return self.__str__()
+
     @property
     def skills(self):
         return self._skill_set
@@ -159,34 +182,6 @@ class SkillSet:
             return ForcedSkillSet(skill_set=skill_set, human_reflection=human_reflection)
         else:
             raise Exception('skill set长度不能为0')
-
-    # @staticmethod
-    # def _deep_search_force_skill(skill: Skill, skill_info: Dict[str, Skill], path: List = None):
-    #     if path is None:
-    #         path = []
-    #     paths = []
-    #     current_path = path + [skill]
-    #     if skill.force_next_skill_time:
-    #         for next_skill_name, force_time in skill.force_next_skill_time.items():
-    #             next_skill = skill_info[next_skill_name]
-    #             if not next_skill.force_next_skill_time:
-    #                 paths.append(current_path + [next_skill])
-    #             else:
-    #                 for sub_path in SkillSet._deep_search_force_skill(skill=next_skill, skill_info=skill_info,
-    #                                                                   path=current_path):
-    #                     paths.append(sub_path)
-    #     else:
-    #         paths.append(current_path)
-    #     return paths
-    #
-    # @staticmethod
-    # def generate_skill_sets(skill_info: Dict[str, Skill], human_reflection: float):
-    #     result = []
-    #     # 针对有柔化技能的技能进行遍历，获得柔化技能组
-    #     for _, skill in skill_info.items():
-    #         result.extend(SkillSet._deep_search_force_skill(skill=skill, skill_info=skill_info))
-    #
-    #     return [SkillSet.parse(x, human_reflection) for x in result]
 
 
 class SingleSkill(SkillSet):
