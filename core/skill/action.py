@@ -1,3 +1,4 @@
+import json
 import random
 from abc import abstractmethod
 from typing import Dict, Union, List
@@ -23,6 +24,10 @@ class SkillStatus:
     #
     # def get_all_status(self):
     #     return self._skill_status_map
+
+    @property
+    def detail(self):
+        return json.dumps(self._skill_status_map, ensure_ascii=False)
 
     def cooling_down(self, ts: float, except_skill_name_list: List[str]):
         for skill_name in self._skill_status_map:
@@ -53,7 +58,7 @@ class SkillStatus:
         return self._skill_status_map[skill_name]['cnt']
 
     def get_skill_res_cd(self, skill_name):
-        return self._skill_status_map[skill_name]['cnt']
+        return self._skill_status_map[skill_name]['res_cd']
 
 
 class SkillAction:
@@ -62,7 +67,6 @@ class SkillAction:
         self._human_reflection = human_reflection
         self._is_op = is_op
         self._skill_list_with_force_skill_set: List[SkillSet] = self._make_force_set(skill_info)
-
 
     def _deep_search_force_skill(self, skill: Skill, skill_info: Dict[str, Skill], path: List = None):
         if path is None:

@@ -151,19 +151,21 @@ class Sim:
             res_time = total_time - self._bias - time_line
             if res_time <= 0:
                 break
-
+            print('--------------------------------------------------')
             # 根据search_strategy，寻找下一个最优的skill_set
             actions = skill_action.return_skill_set_with_skill_status(skill_status)
             next_best_skill = self._search.search_best_skill(search_strategy, actions, res_time)
-            print('--------------------------------------------------')
-            print('当前skill_status:', skill_status)
-            print('下一个最优技能组是:', [x.name for x in next_best_skill.skills])
             if next_best_skill is None:
                 break
+            print('当前time_line:', time_line, ', res_time:', res_time)
+            print('当前skill_status:', skill_status.detail)
+            print('下一个最优技能组是:', [x.detail for x in next_best_skill.skills])
             skill_queue.extend(next_best_skill.skills)
             # print('next_best_skill', [x.name for x in next_best_skill.skills])
+            before_time_line = time_line
             time_line = next_best_skill.execution(time_line, skill_status)
-            print('执行最优技能后的skill_status:', skill_status)
+            print('past:', time_line - before_time_line)
+            print('执行最优技能后的skill_status:', skill_status.detail)
             print('--------------------------------------------------')
             print()
 
