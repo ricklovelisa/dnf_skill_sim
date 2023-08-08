@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from core.skill.definition import Skill
@@ -9,7 +10,7 @@ class SkillQueue:
         self._total_time = total_time
 
     def __str__(self):
-        return [x.name for x in self._queue]
+        return json.dumps(self.skill_name_list, ensure_ascii=False)
 
     def __repr__(self):
         return self.__str__()
@@ -42,3 +43,7 @@ class SkillQueue:
     @property
     def list(self):
         return self._queue
+
+    @property
+    def skill_name_list(self):
+        return [x.name for x in self._queue]

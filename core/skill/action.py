@@ -7,9 +7,12 @@ from core.skill.definition import Skill
 
 
 class SkillStatus:
-    def __init__(self, skill_info: Dict):
+    def __init__(self, skill_info: Dict, init_cnt: Dict = None):
         # {"炸热":{"res_cd":0.4,"cnt":1}}
         self._skill_status_map = self._init_status_map(skill_info)
+        if init_cnt:
+            for skill_name, cnt in init_cnt.items():
+                self._skill_status_map[skill_name]['cnt'] = cnt
 
     def _init_status_map(self, skill_info: Dict) -> Dict[str, Dict[str, Union[float, int]]]:
         result = {}

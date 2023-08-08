@@ -3,6 +3,7 @@ import random
 from itertools import combinations, permutations
 from typing import List, Dict, Union, Tuple
 
+import pandas as pd
 import tqdm
 
 from core.skill.action import SkillStatus, SkillAction, SkillSet
@@ -75,10 +76,6 @@ class Sim:
             return [stone_sets]
 
     @staticmethod
-    def _create_skill_status(skill_pool: Dict) -> SkillStatus:
-        return SkillStatus(skill_pool)
-
-    @staticmethod
     def _create_skill(skill_list: List[str], skill_info: Dict, stone_set: List, stone_skill_info: Dict,
                       fuwen_info: Dict[str, Dict[str, int]], cdr_and_damage_info: Dict):
         fianl_skill_info = {}
@@ -137,7 +134,7 @@ class Sim:
     def sim_best_skill_queue_by_search(self, start_skill_set: SkillSet, skill_action: SkillAction,
                                        skill_info: Dict[str, Skill], is_op: bool, total_time: float,
                                        search_strategy: str) -> SkillQueue:
-        skill_status = self._create_skill_status(skill_info)
+        skill_status = SkillStatus(skill_info)
         time_line = 0
 
         skill_queue = []
@@ -301,6 +298,8 @@ class Sim:
         stone_set_list = self._get_stone_sets(stone_sets)
 
         total_max_result = {}
+        total_sim_result = {'时间轴': [], '是否手搓': [], '护石组合': [], '符文组合': [], 'cdr配装信息': [],
+                            '技能队列': [], '总伤': []}
         # 根据skill信息，生成skill_list
         for total_time in tqdm.tqdm(range(time_range[0], time_range[1] + step, step), desc='全局模拟'):
             max_result = {'damage': 0}
@@ -317,7 +316,14 @@ class Sim:
                                                             fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
                             best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
                                                         total_time=total_time, is_op=is_op, search_strategy='res_cd')
-
+                            total_sim_result['时间轴'].append(total_time)
+                            total_sim_result['是否手搓'].append(is_op)
+                            total_sim_result['护石组合'].append(json.dumps(stone_set, ensure_ascii=False))
+                            total_sim_result['符文组合'].append(json.dumps(fuwen_info, ensure_ascii=False))
+                            total_sim_result['cdr配装信息'].append(json.dumps(cdr_damage, ensure_ascii=False))
+                            total_sim_result['技能队列'].append(
+                                json.dumps(best_skill_queue['skill_queue'].skill_name_list, ensure_ascii=False))
+                            total_sim_result['总伤'].append(best_skill_queue['skill_queue'].compute_total_damage())
                             # print(
                             #     f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
                             # print(f'当前搭配，符文组合: {json.dumps(fuwen_info, ensure_ascii=False)}')
@@ -354,8 +360,7 @@ class Sim:
                   json.dumps(max_result['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
             print('伤害最高的搭配的技能伤害（总）:', max_result['skill_queue'].compute_total_damage())
             print()
-            total_max_result[total_time] = max_result
-        print('最终结果:', total_max_result)
+        pd.DataFrame(total_sim_result).to_csv('../../records/record.csv', encoding='utf_8_sig')
 
 
 if __name__ == '__main__':
@@ -368,7 +373,7 @@ if __name__ == '__main__':
             choice_type='search', time_range=(20, 40),
             # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
             # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
-            step=5,
+            step=1,
             op_info=[True, False])
     # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
     # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
