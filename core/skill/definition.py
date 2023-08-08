@@ -90,9 +90,16 @@ class Skill:
     def update_damage(self, damage_info: Dict, fuwen_info):
         fuwen_rate = self._generate_fuwen_damage_rate(fuwen_info)
 
-        # 全局技能倍率
-        self._damage = damage_info['global'] * fuwen_rate * self._damage
-        self._damage_2 = damage_info['global'] * fuwen_rate * self._damage_2
+        # 更新技能倍率
+        if 'skill' in damage_info:
+            if str(self.level) in damage_info['skill'][str(self.level)]:
+                self._damage = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage
+                self._damage_2 = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage_2
+
+        else:
+            # 全局技能倍率
+            self._damage = damage_info['global'] * fuwen_rate * self._damage
+            self._damage_2 = damage_info['global'] * fuwen_rate * self._damage_2
 
     def get_final_cd(self, is_op: bool, times: int):
         return self.cd * self._cdr_info.get_cdr(is_op, times)
@@ -115,4 +122,3 @@ class Skill:
                 new_skill_info[key] = value
 
         return Skill(skill_name, new_skill_info)
-

@@ -8,6 +8,12 @@ class SkillQueue:
         self._queue = skill_queue
         self._total_time = total_time
 
+    def __str__(self):
+        return [x.name for x in self._queue]
+
+    def __repr__(self):
+        return self.__str__()
+
     def compute_total_damage(self):
         damage_by_skill = self.compute_damage_by_skill()
 

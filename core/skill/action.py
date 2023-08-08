@@ -133,6 +133,10 @@ class SkillAction:
 
         return result
 
+    def clean(self):
+        for skill_set in self._skill_list_with_force_skill_set:
+            skill_set.clean()
+
 
 class SkillSet:
     """ 该类用于描述一些职业的所有的可执行技能组合，这些组合包括单个技能，以及多个相互间可柔化技能。
@@ -172,6 +176,10 @@ class SkillSet:
 
         :return:
         """
+        pass
+
+    @abstractmethod
+    def clean(self):
         pass
 
     @staticmethod
@@ -225,6 +233,11 @@ class SingleSkill(SkillSet):
 
         # 最后返回整体的time_line
         return time_line + self._past_time
+
+    def clean(self):
+        self._past_time = None
+        self._res_cd = None
+        self._skill_cnt = None
 
 
 class ForcedSkillSet(SkillSet):
@@ -290,3 +303,7 @@ class ForcedSkillSet(SkillSet):
 
         # 最后返回整体的time_line
         return time_line + self._past_time
+
+    def clean(self):
+        self._skill_status = {}
+        self._past_time = 0

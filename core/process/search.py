@@ -20,9 +20,18 @@ class Search:
     @staticmethod
     def _search_best_skill_by_res_cd(actions: List[Dict], res_time):
         # print('actions:', actions)
-        filtered_actions = [x for x in actions if len(x['skill_set'].skills) == 1 and res_time > x['past_time']]
+        filtered_actions = [x for x in actions if res_time > x['past_time']]
+
+        # 如果剩余时间能多释放一次该技能，则使用dps来进行选择，如果剩余时间只能释放一次该技能，则使用damage来筛选
+        select_tag = 'dps'
 
         # 如果有很多cd为0的技能，则按照damage/past_time来排序
+        zero_res_cd_actions = [x for x in filtered_actions if x['res_cd'] == 0]
+        if zero_res_cd_actions:
+            zero_res_cd_actions = [{'skill_set': x['skill_set'], 'dpp': x['dps'] / x['past_time']} for x in
+                                   zero_res_cd_actions]
+            sorted_zero_res_cd_actions = sorted(zero_res_cd_actions, key=lambda x: x['dpp'], reverse=True)
+            return sorted_zero_res_cd_actions[0]['skill_set']
 
         sorted_filtered_actions = sorted(filtered_actions, key=lambda x: x['res_cd'], reverse=False)
         # print('sorted_filtered_actions: ', len(sorted_filtered_actions), sorted_filtered_actions)

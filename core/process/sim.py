@@ -151,25 +151,25 @@ class Sim:
             res_time = total_time - self._bias - time_line
             if res_time <= 0:
                 break
-            print(f'----------------------- start set: {start_skill_set} ---------------------------')
             # 根据search_strategy，寻找下一个最优的skill_set
             actions = skill_action.return_skill_set_with_skill_status(skill_status)
             next_best_skill = self._search.search_best_skill(search_strategy, actions, res_time)
             if next_best_skill is None:
                 break
-            print('当前time_line:', time_line, ', res_time:', res_time)
-            print('当前skill_status:', skill_status.detail)
-            print('下一个最优技能组是:', [x.detail for x in next_best_skill.skills])
+
+            # print('----------------------------------------------------------------------')
+            # print('当前time_line:', time_line, ', res_time:', res_time)
+            # print('当前skill_status:', skill_status.detail)
+            # print('下一个最优技能组是:', [x.detail for x in next_best_skill.skills])
             skill_queue.extend(next_best_skill.skills)
             # print('next_best_skill', [x.name for x in next_best_skill.skills])
             before_time_line = time_line
             time_line = next_best_skill.execution(time_line, skill_status)
-            print('past:', time_line - before_time_line)
-            print('执行最优技能后的skill_status:', skill_status.detail)
-            print('--------------------------------------------------')
-            print()
+            # print('past:', time_line - before_time_line)
+            # print('执行最优技能后的skill_status:', skill_status.detail)
+            # print('----------------------------------------------------------------------')
+            # print()
 
-        print([x.name for x in skill_queue])
         return SkillQueue(skill_queue, total_time)
 
     def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
@@ -245,15 +245,23 @@ class Sim:
 
         # 将每个技能组作为第一个技能，进行后续的搜索和模拟
         for skill_set in skill_action.skill_sets:
+            # if len(skill_set.skills) == 1:
+            #     continue
+            # print(f'============================== start set: {skill_set} ==============================')
             skill_queue = self.sim_best_skill_queue_by_search(start_skill_set=skill_set, skill_action=skill_action,
                                                               is_op=is_op, total_time=total_time, skill_info=skill_info,
                                                               search_strategy=search_strategy)
 
             damage = skill_queue.compute_total_damage()
-            print('start_set', skill_set, damage)
+            # print('start_set', skill_set, damage)
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
                 max_skill_queue['skill_queue'] = skill_queue
+            # print(f'======================================================================')
+            # print()
+
+            # 清空本次迭代状态
+            skill_action.clean()
 
         return max_skill_queue
 
@@ -285,18 +293,19 @@ class Sim:
 
         return fuwen_result
 
-    def run(self, epochs: int, set_file_name: str, stone_sets: List, skill_sets: List, choice_type: str,
+    def run(self, cls: str, epochs: int, set_file_name: str, stone_sets: List, skill_sets: List, choice_type: str,
             time_range: Tuple, step: int, op_info: List[bool], fuwen_info_list: Dict = None):
         skill_info, stone_skill_info, cdr_and_damage_info = self._read_set_file(set_file_name)
 
         # 先根据护石信息，生成护石sets
         stone_set_list = self._get_stone_sets(stone_sets)
 
-        max_result = {'damage': 0}
+        total_max_result = {}
         # 根据skill信息，生成skill_list
-        for total_time in range(time_range[0], time_range[1] + step, step):
-            for is_op in op_info:
-                for stone_set in stone_set_list:
+        for total_time in tqdm.tqdm(range(time_range[0], time_range[1] + step, step), desc='全局模拟'):
+            max_result = {'damage': 0}
+            for is_op in tqdm.tqdm(op_info, desc='手搓模拟'):
+                for stone_set in tqdm.tqdm(stone_set_list, desc='护石模拟'):
                     # 根据护石组合，生成符文组合：
                     if not fuwen_info_list:
                         fuwen_info_list = self._create_fuwen_skill_set(stone_set)
@@ -308,14 +317,21 @@ class Sim:
                                                             fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
                             best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
                                                         total_time=total_time, is_op=is_op, search_strategy='res_cd')
-                            # print(f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
+
+                            # print(
+                            #     f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
+                            # print(f'当前搭配，符文组合: {json.dumps(fuwen_info, ensure_ascii=False)}')
+                            # print(f'当前搭配，配装信息:{json.dumps(cdr_damage, ensure_ascii=False)}')
                             # print(f'当前搭配最高，是否手搓:{is_op}')
-                            # print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
+                            # # print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
                             # print('当前搭配最高伤害的技能序列:',
-                            #       json.dumps([i.name for i in best_skill_queue['skill_queue'].list], ensure_ascii=False))
+                            #       json.dumps([i.name for i in best_skill_queue['skill_queue'].list],
+                            #                  ensure_ascii=False))
                             # print('当前搭配最高伤害的技能伤害:',
-                            #       json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
-                            # print('当前搭配最高伤害的技能伤害（总）:', best_skill_queue['skill_queue'].compute_total_damage())
+                            #       json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(),
+                            #                  ensure_ascii=False))
+                            # print('当前搭配最高伤害的技能伤害（总）:',
+                            #       best_skill_queue['skill_queue'].compute_total_damage())
                             # print()
 
                             if best_skill_queue['damage'] > max_result['damage']:
@@ -338,20 +354,22 @@ class Sim:
                   json.dumps(max_result['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
             print('伤害最高的搭配的技能伤害（总）:', max_result['skill_queue'].compute_total_damage())
             print()
+            total_max_result[total_time] = max_result
+        print('最终结果:', total_max_result)
 
 
 if __name__ == '__main__':
     # random.seed(19920125)
     sim = Sim(debug=False)
-    sim.run(epochs=299999, set_file_name='test_sim_set',
-            stone_sets=['炸热', '呀呀呀', '不动'],
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+            stone_sets=['炸热', '不动', '呀呀呀', '雷云'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-            choice_type='search',
-            time_range=(40, 40),
-            fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
+            choice_type='search', time_range=(20, 40),
+            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
+            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
             step=5,
-            op_info=[True])
+            op_info=[True, False])
     # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
     # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
     # sim.run(set_file_name='set_2', max_time=60, step=5, records_file_name='无特化技能(呀呀呀护石)占比')
