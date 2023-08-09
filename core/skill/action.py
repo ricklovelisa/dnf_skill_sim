@@ -88,13 +88,14 @@ class SkillAction:
         current_path = path + [skill]
         if skill.force_next_skill_time:
             for next_skill_name, force_time in skill.force_next_skill_time.items():
-                next_skill = skill_info[next_skill_name]
-                if not next_skill.force_next_skill_time:
-                    paths.append(current_path + [next_skill])
-                else:
-                    for sub_path in self._deep_search_force_skill(skill=next_skill, skill_info=skill_info,
-                                                                  path=current_path):
-                        paths.append(sub_path)
+                if next_skill_name in skill_info:
+                    next_skill = skill_info[next_skill_name]
+                    if not next_skill.force_next_skill_time:
+                        paths.append(current_path + [next_skill])
+                    else:
+                        for sub_path in self._deep_search_force_skill(skill=next_skill, skill_info=skill_info,
+                                                                      path=current_path):
+                            paths.append(sub_path)
         else:
             paths.append(current_path)
         return paths
@@ -125,14 +126,16 @@ class SkillAction:
 
         result = []
         for skill_set in self._skill_list_with_force_skill_set:
-            past_time, damage, dps = skill_set.compute_past_and_damage(self._is_op, skill_status)
-            # 只获取技能组第一个技能的res_cd
-            res_cd = skill_status.get_skill_res_cd(skill_set.skills[0].name)
+            past_time, damage, dps, next_cd = skill_set.compute_past_and_damage(self._is_op, skill_status)
+            # 获取这个技能组的max(res_cd)作为 res_cd,
+            max_res_cd = 0
+            for skill in skill_set.skills:
+                max_res_cd = max(skill_status.get_skill_res_cd(skill.name), max_res_cd)
             # 获取技能组中每个技能的当前使用次数
             curr_cnt = [skill_status.get_skill_cnt(x.name) for x in skill_set.skills]
             result.append(
-                {'skill_set': skill_set, 'res_cd': res_cd, 'past_time': past_time, 'damage': damage, 'dps': dps,
-                 'curr_cnt': curr_cnt})
+                {'skill_set': skill_set, 'res_cd': max_res_cd, 'past_time': past_time, 'damage': damage, 'dps': dps,
+                 'curr_cnt': curr_cnt, 'next_cd': next_cd})
 
         return result
 
@@ -162,6 +165,22 @@ class SkillSet:
     @property
     def skills(self):
         return self._skill_set
+
+    @property
+    def action_time(self):
+        skill_set_len = len(self._skill_set)
+        if skill_set_len == 1:
+            return self._skill_set[0].action_time
+        else:
+            action_time = 0
+            for i in range(skill_set_len):
+                skill = self._skill_set[i]
+                if i < skill_set_len - 1:
+                    next_skill = self._skill_set[i + 1]
+                    action_time += skill.force_next_skill_time[next_skill.name]
+                else:
+                    action_time += skill.action_time
+            return action_time
 
     @abstractmethod
     def compute_past_and_damage(self, is_op: bool, skill_status: SkillStatus):
@@ -216,11 +235,11 @@ class SingleSkill(SkillSet):
 
         # 记录本次技能的技能次数和技能剩余cd
         skill_cnt = skill_status.get_skill_cnt(skill.name) + 1
-        next_res_cd = skill.get_final_cd(is_op, skill_cnt)
-        self._res_cd = next_res_cd - skill.during
+        next_cd = skill.get_final_cd(is_op, skill_cnt)
+        self._res_cd = next_cd - skill.during
         self._skill_cnt = skill_cnt
 
-        return self._past_time, skill.damage, skill.damage / next_res_cd
+        return self._past_time, skill.damage, skill.damage / next_cd, next_cd
 
     def execution(self, time_line: float, skill_status: SkillStatus):
         this_skill_name = self._skill_set[0].name
@@ -260,6 +279,7 @@ class ForcedSkillSet(SkillSet):
         # past_time = 各个技能的wait_time（也就是res_cd） + 前n-1个柔化time + 最后一个技能的action_time
         total_damage = 0
         total_dps = 0
+        max_next_cd = 0
         for i in range(len(self._skill_set)):
             skill = self._skill_set[i]
 
@@ -285,7 +305,10 @@ class ForcedSkillSet(SkillSet):
             # 记录下本次技能开始计算cd的时间，最后用next_cd - (完整的past_time - start_cd_time)，就是该技能剩余的cd数
             self._skill_status[skill.name] = {'start_cd_time': self._past_time + skill.cast_time,
                                               'next_time_cd': next_cd, 'skill_cnt': skill_cnt}
-        return self._past_time, total_damage, total_dps
+
+            # 用技能组中的最大的next_cd作为整体的这个技能组的next_cd
+            max_next_cd = max(max_next_cd, next_cd)
+        return self._past_time, total_damage, total_dps, max_next_cd
 
     def execution(self, time_line: float, skill_status: SkillStatus):
         # 根据每个技能情况，分别设置技能的res_cd
