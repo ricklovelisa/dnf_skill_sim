@@ -1,5 +1,6 @@
 import json
 import random
+from datetime import datetime
 from itertools import combinations, permutations
 from typing import List, Dict, Union, Tuple
 
@@ -139,7 +140,7 @@ class Sim:
 
         skill_queue = []
         # 执行第一个技能
-        _, _, _ = start_skill_set.compute_past_and_damage(is_op, skill_status)
+        _, _, _, _ = start_skill_set.compute_past_and_damage(is_op, skill_status)
         time_line = start_skill_set.execution(time_line, skill_status)
         skill_queue.extend(start_skill_set.skills)
 
@@ -150,7 +151,7 @@ class Sim:
                 break
             # 根据search_strategy，寻找下一个最优的skill_set
             actions = skill_action.return_skill_set_with_skill_status(skill_status)
-            next_best_skill = self._search.search_best_skill(search_strategy, actions, res_time)
+            next_best_skill = self._search.search_best_skill(search_strategy, self._human_refletion, actions, res_time)
             if next_best_skill is None:
                 break
 
@@ -315,7 +316,7 @@ class Sim:
                                                             stone_set=stone_set, stone_skill_info=stone_skill_info,
                                                             fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
                             best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
-                                                        total_time=total_time, is_op=is_op, search_strategy='res_cd')
+                                                        total_time=total_time, is_op=is_op, search_strategy='res_cd_3')
                             total_sim_result['时间轴'].append(total_time)
                             total_sim_result['是否手搓'].append(is_op)
                             total_sim_result['护石组合'].append(json.dumps(stone_set, ensure_ascii=False))
@@ -360,7 +361,9 @@ class Sim:
                   json.dumps(max_result['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
             print('伤害最高的搭配的技能伤害（总）:', max_result['skill_queue'].compute_total_damage())
             print()
-        pd.DataFrame(total_sim_result).to_csv('../../records/record.csv', encoding='utf_8_sig')
+        now = datetime.now()
+        pd.DataFrame(total_sim_result).to_csv(f'../../records/record_{now.strftime("%Y-%m-%d %H:%M:%S")}.csv',
+                                              encoding='utf_8_sig')
 
 
 if __name__ == '__main__':
@@ -370,10 +373,40 @@ if __name__ == '__main__':
             stone_sets=['炸热', '不动', '呀呀呀', '雷云'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-            choice_type='search', time_range=(20, 40),
+            choice_type='search', time_range=(20, 60),
             # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
             # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
-            step=1,
+            step=5,
+            op_info=[True, False])
+
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+            stone_sets=['炸热', '大冰', '呀呀呀', '雷云'],
+            skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
+                        '大冰', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
+            choice_type='search', time_range=(20, 60),
+            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
+            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
+            step=5,
+            op_info=[True, False])
+
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+            stone_sets=['炸热', '大火', '呀呀呀', '雷云'],
+            skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
+                        '大火', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
+            choice_type='search', time_range=(20, 60),
+            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
+            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
+            step=5,
+            op_info=[True, False])
+
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+            stone_sets=['大冰', '大火', '呀呀呀', '雷云'],
+            skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '大冰',
+                        '大火', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
+            choice_type='search', time_range=(20, 60),
+            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
+            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
+            step=5,
             op_info=[True, False])
     # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
     # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
