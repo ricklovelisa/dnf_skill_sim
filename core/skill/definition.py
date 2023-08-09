@@ -91,11 +91,9 @@ class Skill:
         fuwen_rate = self._generate_fuwen_damage_rate(fuwen_info)
 
         # 更新技能倍率
-        if 'skill' in damage_info:
-            if str(self.level) in damage_info['skill']:
-                self._damage = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage
-                self._damage_2 = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage_2
-
+        if 'skill' in damage_info and str(self.level) in damage_info['skill']:
+            self._damage = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage
+            self._damage_2 = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage_2
         else:
             # 全局技能倍率
             self._damage = damage_info['global'] * fuwen_rate * self._damage

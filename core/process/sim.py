@@ -17,38 +17,14 @@ DATA_PATH = '../../data'
 
 class Sim:
 
-    def __init__(self, bias: Union[float, str] = 1, human_refletion=0.1, debug=False):
-        self._bias = bias
+    def __init__(self, max_bias: Union[float, str] = 1, human_refletion=0.1, debug=False):
+        self._max_bias = max_bias
         self._human_refletion = human_refletion
         self._debug = debug
         self._search = Search()
 
-    # def run_with_time(self, skill_dict: Dict, cdr_info_json: Dict, time: int):
-    #     # 先根据skill list和cdr_info_json生成对应技能的cdr
-    #     result = parse_cdr_info(skill_dict, cdr_info_json)
-    #
-    #     # 根据skill_list和cdr_info生成每个技能的次数
-    #     skill_apl = []
-    #     for cdr_info in result:
-    #         # print("=======================================")
-    #         # print(cdr_info.skill.detail)
-    #         time_cost = 0
-    #         times = 0
-    #         while True:
-    #             if time_cost + 2 >= time:
-    #                 break
-    #             # print("++++++++++++++++++++++++++++++++++++++++++++++++++")
-    #             times += 1
-    #             real_cd = cdr_info.get_final_cd(times)
-    #             time_cost += real_cd
-    #             # print(f'time cost: {time_cost}')
-    #             # print("++++++++++++++++++++++++++++++++++++++++++++++++++")
-    #         # print("=======================================")
-    #         # print()
-    #         skill_apl.append(
-    #             {'name': cdr_info.skill.name, 'n': times, 'damage': cdr_info.skill.get_final_damage(time, times)})
-    #     # print(json.dumps(skill_apl, ensure_ascii=False, indent=4))
-    #     return skill_apl
+    def _get_bias(self, total_time):
+        return min(self._max_bias, total_time / 40)
 
     def _read_set_file(self, set_file_name):
         with open(f'{DATA_PATH}/{set_file_name}/skill_info.json', 'r', encoding='utf_8') as f:
@@ -132,10 +108,16 @@ class Sim:
         else:
             return 0.0
 
+    @staticmethod
+    def read_skill_and_stone_sets():
+        with open(f'{DATA_PATH}/skill_and_stone_sets.json', 'r', encoding='utf_8') as f:
+            return json.load(f)
+
     def sim_best_skill_queue_by_search(self, start_skill_set: SkillSet, skill_action: SkillAction,
                                        skill_info: Dict[str, Skill], is_op: bool, total_time: float,
                                        search_strategy: str) -> SkillQueue:
         skill_status = SkillStatus(skill_info)
+        # skill_status = SkillStatus(skill_info, {"无为法": 1})
         time_line = 0
 
         skill_queue = []
@@ -171,7 +153,7 @@ class Sim:
         return SkillQueue(skill_queue, total_time)
 
     def sim_best_skill_queue_by_random(self, skill_info: Dict[str, Skill], is_op: bool, total_time: float):
-        skill_status = self._create_skill_status(skill_info)
+        skill_status = SkillStatus(skill_info)
         time_line = 0
         force_skill_info = None
 
@@ -291,123 +273,118 @@ class Sim:
 
         return fuwen_result
 
-    def run(self, cls: str, epochs: int, set_file_name: str, stone_sets: List, skill_sets: List, choice_type: str,
+    def run(self, cls: str, epochs: int, set_file_name: str, stone_and_skill_sets: Dict, choice_type: str,
             time_range: Tuple, step: int, op_info: List[bool], fuwen_info_list: Dict = None):
         skill_info, stone_skill_info, cdr_and_damage_info = self._read_set_file(set_file_name)
+
+        # skill_sys
+        skill_sys_name = stone_and_skill_sets['name']
+        stone_sets = stone_and_skill_sets['stone_sets']
+        skill_sets = stone_and_skill_sets['skill_sets']
 
         # 先根据护石信息，生成护石sets
         stone_set_list = self._get_stone_sets(stone_sets)
 
-        total_max_result = {}
+        # 生成所有待计算的组合
+        all_sim_sets = []
+        for is_op in op_info:
+            for stone_set in stone_set_list:
+                if not fuwen_info_list:
+                    fuwen_info_list = self._create_fuwen_skill_set(stone_set)
+                for fuwen_info in fuwen_info_list:
+                    # print('fuwen_info', fuwen_info)
+                    for cdr_damage in cdr_and_damage_info:
+                        all_sim_sets.append((is_op, stone_set, fuwen_info, cdr_damage))
+
         total_sim_result = {'时间轴': [], '是否手搓': [], '护石组合': [], '符文组合': [], 'cdr配装信息': [],
-                            '技能队列': [], '总伤': []}
+                            '技能队列': [], '技能伤害': [], '总伤': []}
         # 根据skill信息，生成skill_list
-        for total_time in tqdm.tqdm(range(time_range[0], time_range[1] + step, step), desc='全局模拟'):
-            max_result = {'damage': 0}
-            for is_op in tqdm.tqdm(op_info, desc='手搓模拟'):
-                for stone_set in tqdm.tqdm(stone_set_list, desc='护石模拟'):
-                    # 根据护石组合，生成符文组合：
-                    if not fuwen_info_list:
-                        fuwen_info_list = self._create_fuwen_skill_set(stone_set)
-                    for fuwen_info in fuwen_info_list:
-                        # print('fuwen_info', fuwen_info)
-                        for cdr_damage in cdr_and_damage_info:
-                            skill_list = self._create_skill(skill_list=skill_sets, skill_info=skill_info,
-                                                            stone_set=stone_set, stone_skill_info=stone_skill_info,
-                                                            fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
-                            best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
-                                                        total_time=total_time, is_op=is_op, search_strategy='res_cd_3')
-                            total_sim_result['时间轴'].append(total_time)
-                            total_sim_result['是否手搓'].append(is_op)
-                            total_sim_result['护石组合'].append(json.dumps(stone_set, ensure_ascii=False))
-                            total_sim_result['符文组合'].append(json.dumps(fuwen_info, ensure_ascii=False))
-                            total_sim_result['cdr配装信息'].append(json.dumps(cdr_damage, ensure_ascii=False))
-                            total_sim_result['技能队列'].append(
-                                json.dumps(best_skill_queue['skill_queue'].skill_name_list, ensure_ascii=False))
-                            total_sim_result['总伤'].append(best_skill_queue['skill_queue'].compute_total_damage())
-                            # print(
-                            #     f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
-                            # print(f'当前搭配，符文组合: {json.dumps(fuwen_info, ensure_ascii=False)}')
-                            # print(f'当前搭配，配装信息:{json.dumps(cdr_damage, ensure_ascii=False)}')
-                            # print(f'当前搭配最高，是否手搓:{is_op}')
-                            # # print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
-                            # print('当前搭配最高伤害的技能序列:',
-                            #       json.dumps([i.name for i in best_skill_queue['skill_queue'].list],
-                            #                  ensure_ascii=False))
-                            # print('当前搭配最高伤害的技能伤害:',
-                            #       json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(),
-                            #                  ensure_ascii=False))
-                            # print('当前搭配最高伤害的技能伤害（总）:',
-                            #       best_skill_queue['skill_queue'].compute_total_damage())
-                            # print()
+        time_steps = range(time_range[0], time_range[1] + step, step)
+        total_loop_cnt = len(time_steps) * len(all_sim_sets)
+        with tqdm.tqdm(total=total_loop_cnt, desc=f'{skill_sys_name} {set_file_name} 进行组合模拟') as pbar:
+            for total_time in time_steps:
+                # 生成本次total_time下的bias
+                self._bias = self._get_bias(total_time)
+                max_result = {'damage': 0}
+                for is_op, stone_set, fuwen_info, cdr_damage in all_sim_sets:
+                    skill_list = self._create_skill(skill_list=skill_sets, skill_info=skill_info,
+                                                    stone_set=stone_set, stone_skill_info=stone_skill_info,
+                                                    fuwen_info=fuwen_info, cdr_and_damage_info=cdr_damage)
+                    best_skill_queue = self.sim(epochs=epochs, choice_type=choice_type, skill_info=skill_list,
+                                                total_time=total_time, is_op=is_op, search_strategy='res_cd_3')
+                    total_sim_result['时间轴'].append(total_time)
+                    total_sim_result['是否手搓'].append(is_op)
+                    total_sim_result['护石组合'].append(json.dumps(stone_set, ensure_ascii=False))
+                    total_sim_result['符文组合'].append(json.dumps(fuwen_info, ensure_ascii=False))
+                    total_sim_result['cdr配装信息'].append(json.dumps(cdr_damage, ensure_ascii=False))
+                    total_sim_result['技能队列'].append(
+                        json.dumps(best_skill_queue['skill_queue'].skill_name_list, ensure_ascii=False))
+                    total_sim_result['技能伤害'].append(
+                        json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
+                    total_sim_result['总伤'].append(best_skill_queue['skill_queue'].compute_total_damage())
+                    # print(
+                    #     f'当前搭配，护石组合: {json.dumps(stone_set, ensure_ascii=False)}, 测试时长: {total_time}')
+                    # print(f'当前搭配，符文组合: {json.dumps(fuwen_info, ensure_ascii=False)}')
+                    # print(f'当前搭配，配装信息:{json.dumps(cdr_damage, ensure_ascii=False)}')
+                    # print(f'当前搭配最高，是否手搓:{is_op}')
+                    # # print('当前搭配最高伤害的迭代数:', best_skill_queue['epoch'])
+                    # print('当前搭配最高伤害的技能序列:',
+                    #       json.dumps([i.name for i in best_skill_queue['skill_queue'].list],
+                    #                  ensure_ascii=False))
+                    # print('当前搭配最高伤害的技能伤害:',
+                    #       json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(),
+                    #                  ensure_ascii=False))
+                    # print('当前搭配最高伤害的技能伤害（总）:',
+                    #       best_skill_queue['skill_queue'].compute_total_damage())
+                    # print()
 
-                            if best_skill_queue['damage'] > max_result['damage']:
-                                max_result['damage'] = best_skill_queue['damage']
-                                max_result['skill_queue'] = best_skill_queue['skill_queue']
-                                max_result['stone_set'] = stone_set
-                                max_result['is_op'] = is_op
-                                max_result['fuwen_info'] = fuwen_info
-                                max_result['cdr_damage'] = cdr_damage
+                    if best_skill_queue['damage'] > max_result['damage']:
+                        max_result['damage'] = best_skill_queue['damage']
+                        max_result['skill_queue'] = best_skill_queue['skill_queue']
+                        max_result['stone_set'] = stone_set
+                        max_result['is_op'] = is_op
+                        max_result['fuwen_info'] = fuwen_info
+                        max_result['cdr_damage'] = cdr_damage
+                    pbar.update(1)
 
-            print(f'测试时长: {total_time}')
-            print(f'伤害最高的装备组合: {json.dumps(max_result["cdr_damage"], ensure_ascii=False)}')
-            print(
-                f'伤害最高的搭配，护石组合: {json.dumps(max_result["stone_set"], ensure_ascii=False)}')
-            print(f'伤害最高的搭配，符文组合: {json.dumps(max_result["fuwen_info"], ensure_ascii=False)}')
-            print(f'伤害最高搭配，是否手搓:{max_result["is_op"]}')
-            print('伤害最高的搭配的技能序列:',
-                  json.dumps([i.name for i in max_result['skill_queue'].list], ensure_ascii=False))
-            print('伤害最高的搭配的技能伤害:',
-                  json.dumps(max_result['skill_queue'].compute_damage_by_skill(), ensure_ascii=False))
-            print('伤害最高的搭配的技能伤害（总）:', max_result['skill_queue'].compute_total_damage())
-            print()
+                tqdm.tqdm.write(f'\n测试时长: {total_time}')
+                tqdm.tqdm.write(f'伤害最高的装备组合: {json.dumps(max_result["cdr_damage"], ensure_ascii=False)}')
+                tqdm.tqdm.write(
+                    f'伤害最高的搭配，护石组合: {json.dumps(max_result["stone_set"], ensure_ascii=False)}')
+                tqdm.tqdm.write(f'伤害最高的搭配，符文组合: {json.dumps(max_result["fuwen_info"], ensure_ascii=False)}')
+                tqdm.tqdm.write(f'伤害最高搭配，是否手搓: {max_result["is_op"]}')
+                tqdm.tqdm.write(
+                    f'伤害最高的搭配的技能序列: {json.dumps([i.name for i in max_result["skill_queue"].list], ensure_ascii=False)}')
+                tqdm.tqdm.write(
+                    f'伤害最高的搭配的技能伤害: {json.dumps(max_result["skill_queue"].compute_damage_by_skill(), ensure_ascii=False)}')
+                tqdm.tqdm.write(f'伤害最高的搭配的技能伤害（总）: {max_result["skill_queue"].compute_total_damage()}')
+                tqdm.tqdm.write('')
+
         now = datetime.now()
-        pd.DataFrame(total_sim_result).to_csv(f'../../records/record_{now.strftime("%Y-%m-%d %H:%M:%S")}.csv',
-                                              encoding='utf_8_sig')
+        pd.DataFrame(total_sim_result).to_csv(
+            f'../../records/{skill_sys_name}_{set_file_name}_record_{now.strftime("%Y_%m_%d_%H_%M_%S")}.csv',
+            encoding='utf_8_sig')
+
+    def run_from_config(self, cls, epochs, choice_type, time_range, step, op_info):
+        skill_and_stone_sets = sim.read_skill_and_stone_sets()
+        for skill_and_stone_set in skill_and_stone_sets:
+            for set_file_name in ['实际有的配装', '完美自定义配装']:
+                self.run(cls=cls, epochs=epochs, set_file_name=set_file_name,
+                         choice_type=choice_type, time_range=time_range,
+                         stone_and_skill_sets=skill_and_stone_set, step=step, op_info=op_info)
 
 
 if __name__ == '__main__':
     random.seed(19920125)
     sim = Sim(debug=False)
-    # sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
-    #         stone_sets=['炸热', '不动', '呀呀呀', '雷云'],
-    #         skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
-    #                     '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-    #         choice_type='search', time_range=(20, 60),
-    #         # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
-    #         # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
-    #         step=5,
-    #         op_info=[True, False])
-
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
-            stone_sets=['炸热', '大冰', '呀呀呀', '雷云'],
-            skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
-                        '大冰', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-            choice_type='search', time_range=(20, 60),
+    # sim.run_from_config(cls='阿修罗', epochs=299999, choice_type='search', time_range=(20, 60), step=5,
+    #                     op_info=[True, False])
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='test_sim_set',
+            choice_type='search', time_range=(40, 40),
+            stone_and_skill_sets={"name": "不动加点", "stone_sets": ["炸热", "不动", "呀呀呀", "雷云"],
+                                  "skill_sets": ["邪光", "波爆", "小冰", "小火", "无双", "炸热", "不动", "呀呀呀",
+                                                 "雷云", "无为法", "2觉", "3觉"]}
+            , step=5, op_info=[True]
             # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
-            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
-            step=5,
-            op_info=[True, False])
-
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
-            stone_sets=['炸热', '大火', '呀呀呀', '雷云'],
-            skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
-                        '大火', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-            choice_type='search', time_range=(20, 60),
-            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
-            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
-            step=5,
-            op_info=[True, False])
-
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
-            stone_sets=['大冰', '大火', '呀呀呀', '雷云'],
-            skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '大冰',
-                        '大火', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
-            choice_type='search', time_range=(20, 60),
-            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
-            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}],
-            step=5,
-            op_info=[True, False])
-    # sim.run(set_file_name='set_0', max_time=60, step=5, records_file_name='无特化技能占比')
-    # sim.run(set_file_name='set_1', max_time=60, step=5, records_file_name='无特化技能(雷云护石)占比')
-    # sim.run(set_file_name='set_2', max_time=60, step=5, records_file_name='无特化技能(呀呀呀护石)占比')
+            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}]
+            )

@@ -7,5 +7,5 @@
 
 __pycache__/
 
-records/
+records/*.csv
 
