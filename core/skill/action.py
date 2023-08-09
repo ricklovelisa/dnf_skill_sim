@@ -88,13 +88,14 @@ class SkillAction:
         current_path = path + [skill]
         if skill.force_next_skill_time:
             for next_skill_name, force_time in skill.force_next_skill_time.items():
-                next_skill = skill_info[next_skill_name]
-                if not next_skill.force_next_skill_time:
-                    paths.append(current_path + [next_skill])
-                else:
-                    for sub_path in self._deep_search_force_skill(skill=next_skill, skill_info=skill_info,
-                                                                  path=current_path):
-                        paths.append(sub_path)
+                if next_skill_name in skill_info:
+                    next_skill = skill_info[next_skill_name]
+                    if not next_skill.force_next_skill_time:
+                        paths.append(current_path + [next_skill])
+                    else:
+                        for sub_path in self._deep_search_force_skill(skill=next_skill, skill_info=skill_info,
+                                                                      path=current_path):
+                            paths.append(sub_path)
         else:
             paths.append(current_path)
         return paths
