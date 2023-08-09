@@ -369,7 +369,7 @@ class Sim:
 if __name__ == '__main__':
     random.seed(19920125)
     sim = Sim(debug=False)
-    # sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+    # sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
     #         stone_sets=['炸热', '不动', '呀呀呀', '雷云'],
     #         skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
     #                     '不动', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
@@ -379,7 +379,7 @@ if __name__ == '__main__':
     #         step=5,
     #         op_info=[True, False])
 
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
             stone_sets=['炸热', '大冰', '呀呀呀', '雷云'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '大冰', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
@@ -389,7 +389,7 @@ if __name__ == '__main__':
             step=5,
             op_info=[True, False])
 
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
             stone_sets=['炸热', '大火', '呀呀呀', '雷云'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '炸热',
                         '大火', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
@@ -399,7 +399,7 @@ if __name__ == '__main__':
             step=5,
             op_info=[True, False])
 
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='basic_set',
+    sim.run(cls='阿修罗', epochs=299999, set_file_name='实际有的配装',
             stone_sets=['大冰', '大火', '呀呀呀', '雷云'],
             skill_sets=['邪光', '波爆', '小冰', '小火', '无双', '大冰',
                         '大火', '呀呀呀', '雷云', '无为法', '2觉', '3觉'],
