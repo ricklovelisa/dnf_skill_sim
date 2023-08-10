@@ -377,14 +377,14 @@ class Sim:
 if __name__ == '__main__':
     random.seed(19920125)
     sim = Sim(debug=False)
-    # sim.run_from_config(cls='阿修罗', epochs=299999, choice_type='search', time_range=(20, 60), step=5,
-    #                     op_info=[True, False])
-    sim.run(cls='阿修罗', epochs=299999, set_file_name='test_sim_set',
-            choice_type='search', time_range=(40, 40),
-            stone_and_skill_sets={"name": "不动加点", "stone_sets": ["炸热", "不动", "呀呀呀", "雷云"],
-                                  "skill_sets": ["邪光", "波爆", "小冰", "小火", "无双", "炸热", "不动", "呀呀呀",
-                                                 "雷云", "无为法", "2觉", "3觉"]}
-            , step=5, op_info=[True]
-            # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
-            # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}]
-            )
+    sim.run_from_config(cls='阿修罗', epochs=299999, choice_type='search', time_range=(20, 60), step=5,
+                        op_info=[True])
+    # sim.run(cls='阿修罗', epochs=299999, set_file_name='test_sim_set',
+    #         choice_type='search', time_range=(40, 40),
+    #         stone_and_skill_sets={"name": "不动加点", "stone_sets": ["炸热", "不动", "呀呀呀", "雷云"],
+    #                               "skill_sets": ["邪光", "波爆", "小冰", "小火", "无双", "炸热", "不动", "呀呀呀",
+    #                                              "雷云", "无为法", "2觉", "3觉"]}
+    #         , step=5, op_info=[True]
+    #         # fuwen_info_list=[{"red": {"呀呀呀": 3}, "purple": {"不动": 3}, "blue": {"炸热": 3}}],
+    #         # fuwen_info_list=[{"red": {"炸热": 3}, "blue": {"炸热": 3}, "purple": {"炸热": 3}}]
+    #         )
