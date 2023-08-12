@@ -69,7 +69,22 @@ class Analysis:
 
 
 if __name__ == '__main__':
-    anal = Analysis()
-    # anal.analysis_skill_pct('无特化技能(雷云护石)占比')
-    anal.compare('无特化技能占比', '无特化技能(雷云护石)占比', '雷云')
-    anal.compare('无特化技能占比', '无特化技能(呀呀呀护石)占比', '呀呀呀')
+    # anal = Analysis()
+    # # anal.analysis_skill_pct('无特化技能(雷云护石)占比')
+    # anal.compare('无特化技能占比', '无特化技能(雷云护石)占比', '雷云')
+    # anal.compare('无特化技能占比', '无特化技能(呀呀呀护石)占比', '呀呀呀')
+    df = pd.read_csv(
+        'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records\不动加点_实际有的配装_record_2023_08_13_01_56_43.csv')
+    print(df.columns)
+    skill_list = json.loads(df[df['时间轴'] == 40].sort_values(by="总伤", ascending=False)['技能队列'].iloc[0])
+    skill_damage = 0
+    damage_list = []
+    for item in skill_list:
+        # print(item)
+        skill_damage += item['damage']
+        damage_list.append(skill_damage)
+
+    import matplotlib.pyplot as plt
+
+    plt.plot(damage_list)
+    plt.show()

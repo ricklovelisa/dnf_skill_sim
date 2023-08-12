@@ -223,8 +223,8 @@ class SkillQueue:
         for skill, skill_past_time, skill_next_cd in zip(self._queue, self._skill_past_time_line, self._next_cd_list):
             total_time_line += skill_past_time
             result.append(
-                {'skill': skill.detail, 'skill_past_time': skill_past_time, 'total_time_line': total_time_line,
-                 'skill_next_cd': skill_next_cd})
+                {'skill': skill.detail, 'damage': skill.damage, 'skill_past_time': skill_past_time,
+                 'total_time_line': total_time_line, 'skill_next_cd': skill_next_cd})
         return json.dumps(result, ensure_ascii=False)
 
     @property

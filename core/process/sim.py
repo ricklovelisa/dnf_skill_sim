@@ -308,8 +308,7 @@ class Sim:
                     total_sim_result['护石组合'].append(json.dumps(stone_set, ensure_ascii=False))
                     total_sim_result['符文组合'].append(json.dumps(fuwen_info, ensure_ascii=False))
                     total_sim_result['cdr配装信息'].append(json.dumps(cdr_damage, ensure_ascii=False))
-                    total_sim_result['技能队列'].append(
-                        json.dumps(best_skill_queue['skill_queue'].json, ensure_ascii=False))
+                    total_sim_result['技能队列'].append(best_skill_queue['skill_queue'].json)
                     total_sim_result['技能伤害'].append(
                         json.dumps(best_skill_queue['skill_queue'].compute_damage_by_skill(total_time),
                                    ensure_ascii=False))
