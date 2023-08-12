@@ -85,17 +85,24 @@ class Skill:
 
         return red_damage_rate * purple_damage_rate
 
-    def update_damage(self, damage_info: Dict, fuwen_info):
+    def update_damage(self, damage_info: Dict, fuwen_info: Dict, skill_level_damage_rate_info: Dict):
         fuwen_rate = self._generate_fuwen_damage_rate(fuwen_info)
+        skill_level_damage_rate = 1
+        if skill_level_damage_rate_info and self.name in skill_level_damage_rate_info:
+            skill_level_damage_rate = skill_level_damage_rate_info[self.name]
 
         # 更新技能倍率
         if 'skill' in damage_info and str(self.level) in damage_info['skill']:
-            self._damage = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage
-            self._damage_2 = damage_info['skill'][str(self.level)] * fuwen_rate * self._damage_2
+            damage_1_rate = damage_info['skill'][str(self.level)]['damage_1']
+            damage_2_rate = damage_1_rate
+            if 'damage_2' in damage_info['skill'][str(self.level)]:
+                damage_2_rate = damage_info['skill'][str(self.level)]['damage_2']
+            self._damage = damage_1_rate * fuwen_rate * skill_level_damage_rate * self._damage
+            self._damage_2 = damage_2_rate * fuwen_rate * skill_level_damage_rate * self._damage_2
         else:
             # 全局技能倍率
-            self._damage = damage_info['global'] * fuwen_rate * self._damage
-            self._damage_2 = damage_info['global'] * fuwen_rate * self._damage_2
+            self._damage = damage_info['global'] * fuwen_rate * skill_level_damage_rate * self._damage
+            self._damage_2 = damage_info['global'] * fuwen_rate * skill_level_damage_rate * self._damage_2
 
     def get_final_cd(self, is_op: bool, times: int):
         return self.cd * self._cdr_info.get_cdr(is_op, times)
@@ -173,35 +180,58 @@ class SkillSet:
 
 class SkillQueue:
     class LoopBody:
-        def __init__(self, skill: Skill, skill_past_time: float, skill_res_cd: float):
+        def __init__(self, skill: Skill, skill_past_time: float, skill_next_cd: float):
             self.skill = skill
             self.skill_past_time = skill_past_time
-            self.skill_res_cd = skill_res_cd
+            self.skill_next_cd = skill_next_cd
 
-    def __init__(self, ):
-        self._queue = []
-        self._skill_past_time_line = []
-        self._res_cd_list = []
+    def __init__(self):
+        self._queue: List[Skill] = []
+        self._skill_past_time_line: List[float] = []
+        self._next_cd_list: List[float] = []
 
     def __str__(self):
-        return json.dumps(self.skill_name_list, ensure_ascii=False)
+        return json.dumps(self.skill_names, ensure_ascii=False)
 
     def __repr__(self):
         return self.__str__()
 
     @property
-    def skill_name_list(self):
+    def skill_names(self) -> List[str]:
         return [x.name for x in self._queue]
 
     @property
-    def total_past_time(self):
+    def past_time(self) -> float:
         return sum(self._skill_past_time_line)
+
+    @property
+    def next_cd_list(self) -> List[float]:
+        return self._next_cd_list
+
+    @property
+    def max_next_cd(self) -> float:
+        return max(self._next_cd_list)
+
+    @property
+    def damage(self):
+        return sum([x.damage for x in self._queue])
+
+    @property
+    def json(self):
+        result = []
+        total_time_line = 0
+        for skill, skill_past_time, skill_next_cd in zip(self._queue, self._skill_past_time_line, self._next_cd_list):
+            total_time_line += skill_past_time
+            result.append(
+                {'skill': skill.detail, 'skill_past_time': skill_past_time, 'total_time_line': total_time_line,
+                 'skill_next_cd': skill_next_cd})
+        return json.dumps(result, ensure_ascii=False)
 
     @property
     def loop_info(self):
         result = []
-        for skill, skill_past_line, skill_res_cd in zip(self._queue, self._skill_past_time_line, self._res_cd_list):
-            result.append(self.LoopBody(skill, skill_past_line, skill_res_cd))
+        for skill, skill_past_line, skill_next_cd in zip(self._queue, self._skill_past_time_line, self._next_cd_list):
+            result.append(self.LoopBody(skill, skill_past_line, skill_next_cd))
 
         return result
 
@@ -211,23 +241,40 @@ class SkillQueue:
     def add_skill_past_time(self, past_time: float):
         self._skill_past_time_line.append(past_time)
 
-    def add_skill_res_cd(self, res_cd: float):
-        self._res_cd_list.append(res_cd)
+    def add_skill_next_cd(self, res_cd: float):
+        self._next_cd_list.append(res_cd)
 
     def plot(self, total_time):
         pass
 
     def compute_total_damage(self, total_time):
-        pass
+        active_skill_damage = sum([x.damage for x in self._queue])
+        evn_skill_damage = [total_time // 2 * x.damage_2 for x in self._queue if x.name == '雷云'][0]
+
+        return active_skill_damage + evn_skill_damage
 
     def compute_damage_by_skill(self, total_time):
-        pass
+        damage_dict = {}
+        for skill in self._queue:
+            if skill.name in damage_dict:
+                damage_dict[skill.name]['times'] += 1
+            else:
+                damage_dict[skill.name] = {'times': 1}
+
+        for skill in self._queue:
+            damage = skill.get_final_damage(total_time, damage_dict[skill.name]['times'])
+            damage_dict[skill.name]['damage'] = damage
+
+        damage_list = [{'name': k, 'times': v['times'], 'damage': v['damage']} for k, v in damage_dict.items()]
+        damage_list = sorted(damage_list, key=lambda x: x['damage'], reverse=True)
+
+        return damage_list
 
     def append(self, obj):
         if isinstance(obj, SkillQueue):
             self._queue.extend(obj._queue)
             self._skill_past_time_line.extend(obj._skill_past_time_line)
-            self._res_cd_list.extend(obj._res_cd_list)
+            self._next_cd_list.extend(obj._next_cd_list)
         else:
             raise TypeError('obj不是SkillQueue类')
 
@@ -291,7 +338,7 @@ def deep_search_force_skill(skill: Skill, skill_info: Dict[str, Skill], path: Li
     return paths
 
 
-def make_force_set(skill_info: Dict[str, Skill]):
+def make_force_set(skill_info: Dict[str, Skill]) -> List[SkillSet]:
     result = []
     # 针对有柔化技能的技能进行遍历，获得柔化技能组
     for _, skill in skill_info.items():

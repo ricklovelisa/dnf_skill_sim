@@ -2,7 +2,8 @@ import json
 from copy import copy, deepcopy
 from typing import Dict, Union, Tuple, List
 
-from core.skill.action import SkillSet
+from core.skill.action import SkillSet, SkillStatus, SkillSetAction
+from core.skill.definition import SkillQueue
 
 
 class Search:
@@ -10,64 +11,73 @@ class Search:
     def __init__(self):
         self._zero_bias = 0.000000000001
 
-    def search_best_skill(self, strategy: str, human_reflection: float, actions: List[Dict], res_time) -> SkillSet:
+    def search_best_skill(self, strategy: str, actions: List[SkillSetAction], skill_status: SkillStatus,
+                          res_time) -> SkillSetAction:
         if strategy == 'res_cd':  # 根据剩余cd
-            return self._search_best_skill_by_res_cd(actions, res_time)
-        elif strategy == 'res_cd_2':  # 根据伤害/技能降临时间
-            return self._search_best_skill_by_res_cd_2(actions, human_reflection, res_time)
-        elif strategy == 'res_cd_3':
-            return self._search_best_skill_by_res_cd_3(actions, human_reflection, res_time)
-        elif strategy == 'both_damage_dps_by_past_time':
-            return self._both_search_best_skill_by_damage_and_dps(actions, res_time)
+            # return self._search_best_skill_by_res_cd(actions, res_time)
+            return self._search_best_skill_by_res_cd(actions, skill_status, res_time)
+        # elif strategy == 'res_cd_2':  # 根据伤害/技能降临时间
+        #     return self._search_best_skill_by_res_cd_2(actions, 0.1, res_time)
+        # elif strategy == 'res_cd_3':
+        #     return self._search_best_skill_by_res_cd_3(actions, res_time)
+        # elif strategy == 'both_damage_dps_by_past_time':
+        #     return self._both_search_best_skill_by_damage_and_dps(actions, res_time)
         raise Exception(f'没有该技能选择策略：{strategy} 或 返回可用技能为空')
 
-    def _search_best_skill_by_res_cd(self, actions: List[Dict], res_time: float):
+    # def _search_best_skill_by_res_cd(self, actions: List[Dict], res_time: float):
+    #     # print('actions:', actions)
+    #     filtered_actions = [x for x in actions if res_time > x['past_time']]
+    #
+    #     # 如果有很多cd为0的技能，则按照damage/past_time来排序
+    #     zero_res_cd_actions = [x for x in filtered_actions if x['res_cd'] == 0]
+    #     if zero_res_cd_actions:
+    #         zero_res_cd_actions = [{'skill_set': x['skill_set'], 'dpp': x['damage'] / x['past_time']} for x in
+    #                                zero_res_cd_actions]
+    #         sorted_zero_res_cd_actions = sorted(zero_res_cd_actions, key=lambda x: x['dpp'], reverse=True)
+    #         return sorted_zero_res_cd_actions[0]['skill_set']
+    #
+    #     sorted_filtered_actions = sorted(filtered_actions, key=lambda x: x['res_cd'], reverse=False)
+    #     # print('sorted_filtered_actions: ', len(sorted_filtered_actions), sorted_filtered_actions)
+    #     if len(sorted_filtered_actions) == 0:
+    #         return None
+    #     else:
+    #         return sorted_filtered_actions[0]['skill_set']
+
+    @staticmethod
+    def _search_best_skill_by_res_cd(skill_actions: List[SkillSetAction], skill_status: SkillStatus, res_time: float):
         # print('actions:', actions)
-        filtered_actions = [x for x in actions if res_time > x['past_time']]
-
-        # 如果有很多cd为0的技能，则按照damage/past_time来排序
-        zero_res_cd_actions = [x for x in filtered_actions if x['res_cd'] == 0]
-        if zero_res_cd_actions:
-            zero_res_cd_actions = [{'skill_set': x['skill_set'], 'dpp': x['damage'] / x['past_time']} for x in
-                                   zero_res_cd_actions]
-            sorted_zero_res_cd_actions = sorted(zero_res_cd_actions, key=lambda x: x['dpp'], reverse=True)
-            return sorted_zero_res_cd_actions[0]['skill_set']
-
-        sorted_filtered_actions = sorted(filtered_actions, key=lambda x: x['res_cd'], reverse=False)
-        # print('sorted_filtered_actions: ', len(sorted_filtered_actions), sorted_filtered_actions)
-        if len(sorted_filtered_actions) == 0:
+        # filtered_actions = [x for x in skill_action_queue if res_time > x['past_time']]
+        filtered_actions = [x for x in skill_actions if res_time > x.queue.past_time]
+        if len(filtered_actions) == 0:
             return None
-        else:
-            return sorted_filtered_actions[0]['skill_set']
-
-    def _search_best_skill_by_res_cd_3(self, actions: List[Dict], human_reflection: float, res_time: float):
-        # print('actions:', actions)
-        filtered_actions = [x for x in actions if res_time > x['past_time']]
 
         # 如果有很多cd为0的技能，则按照damage/past_time来排序
-        zero_res_cd_actions = [x for x in filtered_actions if x['res_cd'] == 0]
+        actions_and_res_cd = []
+        for action in filtered_actions:
+            if len(action.queue.skill_names) == 1:
+                res_cd = skill_status.get_skill_res_cd(action.queue.skill_names[0])
+            else:
+                res_cd = max([skill_status.get_skill_res_cd(x) for x in action.queue.skill_names])
+            actions_and_res_cd.append((action, res_cd))
+
+        zero_res_cd_actions = [x[0] for x in actions_and_res_cd if x[1] == 0]
         if zero_res_cd_actions:
             sorted_zero_res_cd_actions = []
             for action in zero_res_cd_actions:
-                next_cd = action['next_cd']
-                if res_time > next_cd + human_reflection + action['skill_set'].action_time:
-                    sorted_zero_res_cd_actions.append(
-                        {'skill_set': action['skill_set'], 'dpp': action['damage'] / action['past_time']})
+                next_cd = action.queue.max_next_cd
+                if res_time > next_cd + action.human_reflection + action.skill_set.action_time:
+                    sorted_zero_res_cd_actions.append((action, action.queue.damage / action.queue.past_time))
                 else:
-                    sorted_zero_res_cd_actions.append(
-                        {'skill_set': action['skill_set'], 'dpp': action['dps'] / action['past_time']})
+                    sorted_zero_res_cd_actions.append((action, action.queue.damage / next_cd / action.queue.past_time))
 
             # zero_res_cd_actions = [{'skill_set': x['skill_set'], 'dpp': x['damage'] / x['past_time']} for x in
             #                        zero_res_cd_actions]
-            sorted_zero_res_cd_actions = sorted(sorted_zero_res_cd_actions, key=lambda x: x['dpp'], reverse=True)
-            return sorted_zero_res_cd_actions[0]['skill_set']
+            sorted_zero_res_cd_actions = sorted(sorted_zero_res_cd_actions, key=lambda x: x[1], reverse=True)
+            return sorted_zero_res_cd_actions[0][0]
 
-        sorted_filtered_actions = sorted(filtered_actions, key=lambda x: x['res_cd'], reverse=False)
+        sorted_filtered_actions = sorted(actions_and_res_cd, key=lambda x: x[1], reverse=False)
         # print('sorted_filtered_actions: ', len(sorted_filtered_actions), sorted_filtered_actions)
-        if len(sorted_filtered_actions) == 0:
-            return None
-        else:
-            return sorted_filtered_actions[0]['skill_set']
+        return sorted_filtered_actions[0][0]
 
     def _search_best_skill_by_res_cd_2(self, actions: List[Dict], human_reflection: float, res_time: float):
         # print('actions:', actions)
