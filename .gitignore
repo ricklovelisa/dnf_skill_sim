@@ -8,5 +8,4 @@
 
 __pycache__/
 
-records/*.csv
-
+records/

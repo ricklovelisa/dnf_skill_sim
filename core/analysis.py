@@ -1,7 +1,10 @@
 import json
-from typing import Dict
+import os
+from typing import Dict, List
 
+import numpy as np
 import pandas as pd
+import tqdm
 from matplotlib import pyplot as plt
 
 
@@ -67,24 +70,96 @@ class Analysis:
 
         print(incr_df)
 
+    @staticmethod
+    def read_all_records():
+        path = 'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records/'
+        all_files = os.listdir(path)
+        total_df = None
+        for file in [x for x in all_files if 'csv' in x]:
+            df = pd.read_csv(f'{path}/{file}')
+            df = df[['时间轴', '是否手搓', '护石组合', '符文组合', 'cdr配装信息', '技能队列', '技能伤害', '总伤']]
+            tag = file.split('_')[0]
+            etype = file.split('_')[1]
+            df['加点'] = tag
+            df['配装类型'] = etype
+
+            if total_df is None:
+                total_df = df
+            else:
+                total_df = pd.concat([total_df, df], axis=0)
+        return total_df
+
+    @staticmethod
+    def _top_n(grouped_df: pd.DataFrame):
+        n = 1
+        top_n = grouped_df.sort_values(by=['总伤'], ascending=False).iloc[0:n]
+        # print(top_n.shape)
+        return top_n
+
+    def _compute_damage_curv(self, skill_damage_list: List[Dict], max_time_line):
+        damage_df = {'time_line': [], 'cumulative_damage': []}
+        step = 1
+        for i in np.arange(0, max_time_line + step, step):
+            skill_damage = 0
+            for item in skill_damage_list:
+                if item['total_time_line'] <= i:
+                    skill_damage += item['damage']
+            damage_df['time_line'].append(i)
+            damage_df['cumulative_damage'].append(skill_damage)
+
+        return pd.DataFrame(damage_df)
+
+    def time_line_analysis(self, df: pd.DataFrame):
+        # 根据各个时间轴获取最优候选
+        tops_by_time_line = df.groupby(by=['时间轴']).apply(self._top_n)
+        # print(max_time_line)
+        # print(tops_by_time_line)
+        # 根据top1，画出每个时间轴的伤害曲线
+        for i in range(tops_by_time_line.shape[0]):
+            row = tops_by_time_line.iloc[i]
+            time_line = row['时间轴']
+            skill_damage_list = json.loads(row['技能队列'])
+            damage_curv = self._compute_damage_curv(skill_damage_list, time_line)
+            # print(damage_curv['cumulative_damage'].tolist())
+            plt.plot(damage_curv['time_line'].tolist(), damage_curv['cumulative_damage'].tolist())
+        plt.show()
+
+        # 分别统计20-60s内各个时间轴上的Top3配装、护石
+
+    def stone_analysis(self, df: pd.DataFrame):
+        # tqdm.tqdm.pandas()
+        df.groupby(by=['时间轴', '护石组合']).apply(self._analysis)
+
 
 if __name__ == '__main__':
-    # anal = Analysis()
+    anal = Analysis()
     # # anal.analysis_skill_pct('无特化技能(雷云护石)占比')
     # anal.compare('无特化技能占比', '无特化技能(雷云护石)占比', '雷云')
     # anal.compare('无特化技能占比', '无特化技能(呀呀呀护石)占比', '呀呀呀')
-    df = pd.read_csv(
-        'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records\不动加点_实际有的配装_record_2023_08_13_01_56_43.csv')
-    print(df.columns)
-    skill_list = json.loads(df[df['时间轴'] == 40].sort_values(by="总伤", ascending=False)['技能队列'].iloc[0])
-    skill_damage = 0
-    damage_list = []
-    for item in skill_list:
-        # print(item)
-        skill_damage += item['damage']
-        damage_list.append(skill_damage)
+    test_df = pd.read_csv(
+        'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records\不动加点_完美自定义配装_record_2023_08_13_03_15_33.csv')
+    test_df['加点'] = '不动加点'
+    test_df['配装类型'] = '完美自定义配装'
+    anal.time_line_analysis(test_df)
 
-    import matplotlib.pyplot as plt
+    # df = anal.read_all_records()
+    # df.to_csv('total_data', encoding='utf_8_sig', index=False)
+    #
+    # # 先做时间轴分析，分析各个时间轴上，最优护石组合、最优符文组合、最优cdr配装信息、最优加点
+    # anal.time_line_analysis(df)
 
-    plt.plot(damage_list)
-    plt.show()
+    # df = pd.read_csv(
+    #     'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records\不动加点_实际有的配装_record_2023_08_13_01_56_43.csv')
+    # print(df.columns)
+    # skill_list = json.loads(df[df['时间轴'] == 40].sort_values(by="总伤", ascending=False)['技能队列'].iloc[0])
+    # skill_damage = 0
+    # damage_list = []
+    # for item in skill_list:
+    #     # print(item)
+    #     skill_damage += item['damage']
+    #     damage_list.append(skill_damage)
+    #
+    # import matplotlib.pyplot as plt
+    #
+    # plt.plot(damage_list)
+    # plt.show()

@@ -61,7 +61,7 @@ class Search:
             actions_and_res_cd.append((action, res_cd))
 
         zero_res_cd_actions = [x[0] for x in actions_and_res_cd if x[1] == 0]
-        if zero_res_cd_actions:
+        if len(zero_res_cd_actions) > 1:
             sorted_zero_res_cd_actions = []
             for action in zero_res_cd_actions:
                 next_cd = action.queue.max_next_cd
