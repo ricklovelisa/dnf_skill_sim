@@ -112,6 +112,10 @@ class Analysis:
     def time_line_analysis(self, df: pd.DataFrame):
         # 根据各个时间轴获取最优候选
         tops_by_time_line = df.groupby(by=['时间轴']).apply(self._top_n)
+        print(tops_by_time_line.columns)
+        print(tops_by_time_line[
+            ['时间轴', '是否手搓', '加点', '护石组合', '符文组合', '配装类型', 'cdr配装信息']].to_markdown(
+            index=False))
         # print(max_time_line)
         # print(tops_by_time_line)
         # 根据top1，画出每个时间轴的伤害曲线
@@ -125,6 +129,9 @@ class Analysis:
         plt.show()
 
         # 分别统计20-60s内各个时间轴上的Top3配装、护石
+        for time_line in tops_by_time_line['时间轴']:
+            base_damage = tops_by_time_line[tops_by_time_line['时间轴'] == time_line]['总伤']
+            # 获取该时间轴下，top3加点，护石组合，符文组合，配装类型，cdr配装信息
 
     def stone_analysis(self, df: pd.DataFrame):
         # tqdm.tqdm.pandas()
@@ -136,11 +143,21 @@ if __name__ == '__main__':
     # # anal.analysis_skill_pct('无特化技能(雷云护石)占比')
     # anal.compare('无特化技能占比', '无特化技能(雷云护石)占比', '雷云')
     # anal.compare('无特化技能占比', '无特化技能(呀呀呀护石)占比', '呀呀呀')
-    test_df = pd.read_csv(
-        'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records\不动加点_完美自定义配装_record_2023_08_13_03_15_33.csv')
-    test_df['加点'] = '不动加点'
-    test_df['配装类型'] = '完美自定义配装'
-    anal.time_line_analysis(test_df)
+    df = pd.read_csv('../records/不动加点_实际有的配装_record_2023_08_13_03_06_30.csv')
+    df['加点'] = '不动加点'
+    df['配装类型'] = '实际有的配装'
+
+    # 整体时间轴分析
+    anal.time_line_analysis(df)
+
+    # 护石符文分析
+    anal.stone_analysis(df)
+
+    # 配装分析
+    anal.cdr_damage_analysis(df)
+
+    # 加点分析
+    anal.skill_analysis(df)
 
     # df = anal.read_all_records()
     # df.to_csv('total_data', encoding='utf_8_sig', index=False)
