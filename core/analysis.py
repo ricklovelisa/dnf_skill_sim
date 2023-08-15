@@ -78,6 +78,7 @@ class Analysis:
         for file in [x for x in all_files if 'csv' in x]:
             df = pd.read_csv(f'{path}/{file}')
             df = df[['时间轴', '是否手搓', '护石组合', '符文组合', 'cdr配装信息', '技能队列', '技能伤害', '总伤']]
+            df['cdr配装名称'] = df['cdr配装信息'].apply(lambda x:json.loads(x)['name'])
             tag = file.split('_')[0]
             etype = file.split('_')[1]
             df['加点'] = tag
@@ -97,11 +98,11 @@ class Analysis:
         return top_n
 
     @staticmethod
-    def _statics(grouped_df: pd.DataFrame):
-        avg_damapge = grouped_df['总伤'].mean()
-        median_damage = grouped_df['总伤'].median()
+    def _statics(grouped_df: pd.DataFrame, col):
+        avg_damapge = grouped_df[col].mean()
+        median_damage = grouped_df[col].median()
 
-        return pd.Series([avg_damapge, median_damage], index=['avg_damage', 'median_damage'])
+        return pd.Series([avg_damapge, median_damage], index=[f'avg_{col}', f'median_{col}'])
 
     def _compute_damage_curv(self, skill_damage_list: List[Dict], max_time_line):
         damage_df = {'time_line': [], 'cumulative_damage': []}
@@ -135,10 +136,23 @@ class Analysis:
             plt.plot(damage_curv['time_line'].tolist(), damage_curv['cumulative_damage'].tolist())
         plt.show()
 
-    def group_analysis(self, df: pd.DataFrame, by: List[str]):
-        # tqdm.tqdm.pandas()
-        stone_df = df.groupby(by=by).apply(self._statics).sort_values(by='avg_damage', ascending=False)
-        print(stone_df.to_markdown())
+    def group_analysis(self, df: pd.DataFrame, by: List[str], rank_by=None):
+        sort_col = '总伤'
+        group_col = by
+        if rank_by:
+            group_col = by + rank_by
+        group_df = df.groupby(by=group_col).apply(self._statics, sort_col).reset_index()
+        if rank_by:  # 如果有排序需求，则根据需要排序的字段，加一列排序列
+            group_df['rank'] = group_df.groupby(by=rank_by)[f'avg_{sort_col}'].rank(ascending=False)
+        group_df = group_df.sort_values(by=f'avg_{sort_col}', ascending=False)
+        print(group_df.to_markdown(index=False))
+
+        # 计算平均rank
+        if rank_by:
+            avg_group_df = group_df.groupby(by=by).apply(self._statics, 'rank').reset_index().sort_values(
+                by=f'avg_rank')
+            print(avg_group_df.to_markdown(index=False))
+        print()
 
 
 if __name__ == '__main__':
@@ -146,28 +160,33 @@ if __name__ == '__main__':
     # # anal.analysis_skill_pct('无特化技能(雷云护石)占比')
     # anal.compare('无特化技能占比', '无特化技能(雷云护石)占比', '雷云')
     # anal.compare('无特化技能占比', '无特化技能(呀呀呀护石)占比', '呀呀呀')
-    df = anal.read_all_records()
-    # df = pd.read_csv('../records/不动加点_完美自定义配装_record_2023_08_14_21_29_32.csv')
-    # df['加点'] = '不动加点'
-    # df['配装类型'] = '实际有的配装'
+    # df = anal.read_all_records()
+    df = pd.read_csv('../records/不动加点_实际有的配装_record_2023_08_13_03_06_30.csv')
+    df['cdr配装名称'] = df['cdr配装信息'].apply(lambda x: json.loads(x)['name'])
+    df['加点'] = '不动加点'
+    df['配装类型'] = '实际有的配装'
 
     # 整体时间轴分析
     anal.time_line_analysis(df)
 
     # 护石符文分析
-    anal.group_analysis(df, by=['护石组合'])
+    anal.group_analysis(df, by=['护石组合'], rank_by=['时间轴'])
 
     # 加点分析
-    anal.group_analysis(df, by=['加点'])
+    anal.group_analysis(df, by=['加点'], rank_by=['时间轴'])
 
     # 配装分析
-    anal.group_analysis(df, by=['配装类型', 'cdr配装信息'])
+    anal.group_analysis(df, by=['配装类型', 'cdr配装名称'], rank_by=['时间轴'])
 
-    # 交叉分析
-    # 护石+加点分析
-    anal.group_analysis(df, by=['护石组合', '加点'])
-    # 护石+加点+配装
-    anal.group_analysis(df, by=['护石组合', '加点', '配装类型', 'cdr配装信息'])
+    # # 交叉分析
+    # # 护石+加点分析
+    # anal.group_analysis(df, by=['护石组合', '加点'])
+    # # 护石+配装分析
+    # anal.group_analysis(df, by=['护石组合', '配装类型', 'cdr配装信息'])
+    # # 加点+配装分析
+    # anal.group_analysis(df, by=['加点', '配装类型', 'cdr配装信息'])
+    # # 护石+加点+配装
+    # anal.group_analysis(df, by=['护石组合', '加点', '配装类型', 'cdr配装信息'])
 
     # df = anal.read_all_records()
     # df.to_csv('total_data', encoding='utf_8_sig', index=False)
