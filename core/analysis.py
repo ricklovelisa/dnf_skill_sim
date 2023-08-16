@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from typing import Dict, List
 
 import numpy as np
@@ -9,6 +10,128 @@ from matplotlib import pyplot as plt
 
 
 class Analysis:
+    plot_color = {
+        'aquamarine': '#7FFFD4',
+        'beige': '#F5F5DC',
+        'bisque': '#FFE4C4',
+        'black': '#000000',
+        'blanchedalmond': '#FFEBCD',
+        'blue': '#0000FF',
+        'blueviolet': '#8A2BE2',
+        'brown': '#A52A2A',
+        'burlywood': '#DEB887',
+        'cadetblue': '#5F9EA0',
+        'chocolate': '#D2691E',
+        'coral': '#FF7F50',
+        'cornflowerblue': '#6495ED',
+        'cornsilk': '#FFF8DC',
+        'crimson': '#DC143C',
+        'cyan': '#00FFFF',
+        'darkblue': '#00008B',
+        'darkcyan': '#008B8B',
+        'darkgoldenrod': '#B8860B',
+        'darkgray': '#A9A9A9',
+        'darkgreen': '#006400',
+        'darkkhaki': '#BDB76B',
+        'darkmagenta': '#8B008B',
+        'darkolivegreen': '#556B2F',
+        'darkorange': '#FF8C00',
+        'darkorchid': '#9932CC',
+        'darkred': '#8B0000',
+        'darksalmon': '#E9967A',
+        'darkseagreen': '#8FBC8F',
+        'darkslateblue': '#483D8B',
+        'darkslategray': '#2F4F4F',
+        'darkturquoise': '#00CED1',
+        'darkviolet': '#9400D3',
+        'deeppink': '#FF1493',
+        'deepskyblue': '#00BFFF',
+        'dimgray': '#696969',
+        'dodgerblue': '#1E90FF',
+        'firebrick': '#B22222',
+        'forestgreen': '#228B22',
+        'fuchsia': '#FF00FF',
+        'gainsboro': '#DCDCDC',
+        'gold': '#FFD700',
+        'goldenrod': '#DAA520',
+        'gray': '#808080',
+        'green': '#008000',
+        'greenyellow': '#ADFF2F',
+        'hotpink': '#FF69B4',
+        'indianred': '#CD5C5C',
+        'indigo': '#4B0082',
+        'khaki': '#F0E68C',
+        'lavender': '#E6E6FA',
+        'lavenderblush': '#FFF0F5',
+        'lawngreen': '#7CFC00',
+        'lemonchiffon': '#FFFACD',
+        'lightblue': '#ADD8E6',
+        'lightcoral': '#F08080',
+        'lightgoldenrodyellow': '#FAFAD2',
+        'lightgreen': '#90EE90',
+        'lightgray': '#D3D3D3',
+        'lightpink': '#FFB6C1',
+        'lightsalmon': '#FFA07A',
+        'lightseagreen': '#20B2AA',
+        'lightskyblue': '#87CEFA',
+        'lightslategray': '#778899',
+        'lightsteelblue': '#B0C4DE',
+        'lime': '#00FF00',
+        'limegreen': '#32CD32',
+        'magenta': '#FF00FF',
+        'maroon': '#800000',
+        'mediumaquamarine': '#66CDAA',
+        'mediumblue': '#0000CD',
+        'mediumorchid': '#BA55D3',
+        'mediumpurple': '#9370DB',
+        'mediumseagreen': '#3CB371',
+        'mediumslateblue': '#7B68EE',
+        'mediumspringgreen': '#00FA9A',
+        'mediumturquoise': '#48D1CC',
+        'mediumvioletred': '#C71585',
+        'midnightblue': '#191970',
+        'mistyrose': '#FFE4E1',
+        'moccasin': '#FFE4B5',
+        'navy': '#000080',
+        'olive': '#808000',
+        'olivedrab': '#6B8E23',
+        'orange': '#FFA500',
+        'orangered': '#FF4500',
+        'orchid': '#DA70D6',
+        'palegoldenrod': '#EEE8AA',
+        'palegreen': '#98FB98',
+        'paleturquoise': '#AFEEEE',
+        'palevioletred': '#DB7093',
+        'papayawhip': '#FFEFD5',
+        'peachpuff': '#FFDAB9',
+        'peru': '#CD853F',
+        'pink': '#FFC0CB',
+        'plum': '#DDA0DD',
+        'powderblue': '#B0E0E6',
+        'purple': '#800080',
+        'red': '#FF0000',
+        'rosybrown': '#BC8F8F',
+        'royalblue': '#4169E1',
+        'saddlebrown': '#8B4513',
+        'salmon': '#FA8072',
+        'sandybrown': '#FAA460',
+        'seagreen': '#2E8B57',
+        'sienna': '#A0522D',
+        'silver': '#C0C0C0',
+        'skyblue': '#87CEEB',
+        'slateblue': '#6A5ACD',
+        'slategray': '#708090',
+        'springgreen': '#00FF7F',
+        'steelblue': '#4682B4',
+        'tan': '#D2B48C',
+        'teal': '#008080',
+        'thistle': '#D8BFD8',
+        'tomato': '#FF6347',
+        'turquoise': '#40E0D0',
+        'violet': '#EE82EE',
+        'wheat': '#F5DEB3',
+        'yellow': '#FFFF00',
+        'yellowgreen': '#9ACD32'}
 
     def read_records(self, record_file_name) -> Dict:
         with open(f'records/{record_file_name}.json', 'r') as f:
@@ -78,7 +201,7 @@ class Analysis:
         for file in [x for x in all_files if 'csv' in x]:
             df = pd.read_csv(f'{path}/{file}')
             df = df[['时间轴', '是否手搓', '护石组合', '符文组合', 'cdr配装信息', '技能队列', '技能伤害', '总伤']]
-            df['cdr配装名称'] = df['cdr配装信息'].apply(lambda x:json.loads(x)['name'])
+            df['cdr配装名称'] = df['cdr配装信息'].apply(lambda x: json.loads(x)['name'])
             tag = file.split('_')[0]
             etype = file.split('_')[1]
             df['加点'] = tag
@@ -122,7 +245,7 @@ class Analysis:
         tops_by_time_line = df.groupby(by=['时间轴']).apply(self._top_n, 1)
         print(tops_by_time_line.columns)
         print(tops_by_time_line[
-            ['时间轴', '是否手搓', '加点', '护石组合', '符文组合', '配装类型', 'cdr配装信息']].to_markdown(
+            ['时间轴', '是否手搓', '加点', '护石组合', '符文组合', '配装类型', 'cdr配装名称']].to_markdown(
             index=False))
         # print(max_time_line)
         # print(tops_by_time_line)
@@ -144,6 +267,7 @@ class Analysis:
         group_df = df.groupby(by=group_col).apply(self._statics, sort_col).reset_index()
         if rank_by:  # 如果有排序需求，则根据需要排序的字段，加一列排序列
             group_df['rank'] = group_df.groupby(by=rank_by)[f'avg_{sort_col}'].rank(ascending=False)
+            self.plot_multi_bar(group_df, by, sort_col)
         group_df = group_df.sort_values(by=f'avg_{sort_col}', ascending=False)
         print(group_df.to_markdown(index=False))
 
@@ -154,20 +278,55 @@ class Analysis:
             print(avg_group_df.to_markdown(index=False))
         print()
 
+    def plot_multi_bar(self, df: pd.DataFrame, by, sort_col):
+        plt.rcParams['font.sans-serif'] = ['SimHei']
+        plt.rcParams['axes.unicode_minus'] = False
+        groupeds = df.groupby(by=by)
+        cate_list = []
+        for grouped in groupeds:
+            cate_list.append(grouped[0])
+
+        bar_width = 4 / len(cate_list)
+        index = 0
+        colors = list(self.plot_color.keys())
+        plt.figure(figsize=(16, 9))
+        for grouped in groupeds:
+            cate_str = grouped[0]
+            if len(cate_str) > 1:
+                print(cate_str)
+                cate_str = json.dumps([str(x) for x in cate_str], ensure_ascii=False)
+            else:
+                cate_str = cate_str[0]
+            grouped_df = grouped[1]
+            color = colors[index * len(cate_list) % len(colors)]
+            print(color)
+            if len(cate_list) > 6:
+                plt.bar(grouped_df['时间轴'] + index * bar_width, grouped_df[f'avg_{sort_col}'].tolist(), bar_width,
+                        label=cate_str, color=color)
+            else:
+                plt.bar(grouped_df['时间轴'] + index * bar_width, grouped_df[f'avg_{sort_col}'].tolist(), bar_width,
+                        label=cate_str)
+            index += 1
+        plt.ylim(df[f'avg_{sort_col}'].min() * 0.95, df[f'avg_{sort_col}'].max() * 1.05)
+        plt.xlabel('时间轴')
+        plt.ylabel(f'avg_{sort_col}')
+        plt.legend()
+        plt.show()
+
 
 if __name__ == '__main__':
     anal = Analysis()
     # # anal.analysis_skill_pct('无特化技能(雷云护石)占比')
     # anal.compare('无特化技能占比', '无特化技能(雷云护石)占比', '雷云')
     # anal.compare('无特化技能占比', '无特化技能(呀呀呀护石)占比', '呀呀呀')
-    # df = anal.read_all_records()
-    df = pd.read_csv('../records/不动加点_实际有的配装_record_2023_08_13_03_06_30.csv')
-    df['cdr配装名称'] = df['cdr配装信息'].apply(lambda x: json.loads(x)['name'])
-    df['加点'] = '不动加点'
-    df['配装类型'] = '实际有的配装'
+    df = anal.read_all_records()
+    # df = pd.read_csv('../records/不动加点_实际有的配装_record_2023_08_15_22_56_05.csv')
+    # df['cdr配装名称'] = df['cdr配装信息'].apply(lambda x: json.loads(x)['name'])
+    # df['加点'] = '不动加点'
+    # df['配装类型'] = '实际有的配装'
 
     # 整体时间轴分析
-    anal.time_line_analysis(df)
+    # anal.time_line_analysis(df)
 
     # 护石符文分析
     anal.group_analysis(df, by=['护石组合'], rank_by=['时间轴'])
@@ -178,6 +337,9 @@ if __name__ == '__main__':
     # 配装分析
     anal.group_analysis(df, by=['配装类型', 'cdr配装名称'], rank_by=['时间轴'])
 
+    # 手搓分析
+    anal.group_analysis(df, by=['是否手搓'], rank_by=['时间轴'])
+    anal.group_analysis(df, by=['是否手搓', '配装类型', 'cdr配装名称'], rank_by=['时间轴'])
     # # 交叉分析
     # # 护石+加点分析
     # anal.group_analysis(df, by=['护石组合', '加点'])
