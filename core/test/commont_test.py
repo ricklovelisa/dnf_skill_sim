@@ -10,7 +10,7 @@ group_B = [12, 16, 16, 15]
 group_C = [14, 12, 14, 18]
 group_D = [19, 11, 17, 13]
 # 组宽度设置
-bar_width = 0.1
+bar_width = 0.15
 
 # 创建索引
 index = np.arange(len(categories))
