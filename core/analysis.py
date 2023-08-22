@@ -195,7 +195,7 @@ class Analysis:
 
     @staticmethod
     def read_all_records():
-        path = 'C:/Users\QQ\PycharmProjects\阿修罗技能测试/records/'
+        path = '../records/'
         all_files = os.listdir(path)
         total_df = None
         for file in [x for x in all_files if 'csv' in x]:

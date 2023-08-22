@@ -1,5 +1,6 @@
 {"name": "无cdr空血","damage_info": {"global": 1},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [], "lingtong_info": {}}}
 {"name": "毒腰空血","damage_info": {"global": 0.8947},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.25], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
+{"name": "毒腰空血，满中毒对象","damage_info": {"global": 0.9089},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.25], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
 {"name": "黑白戒指静谧腰空血","damage_info": {"global": 0.8641},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.3], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
 {"name": "雷达戒指静谧腰空血","damage_info": {"global": 0.8562},"cdr_info": {"common_cdr": [0.95],"common_cdrr": [0.42], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
 {"name": "半血","damage_info": {"global": 0.941,"skill": {"100": {"damage_1":0.8402},"85": {"damage_1":0.8402}, "45": {"damage_1":0.8962}, "20": {"damage_1":1.0821},"25": {"damage_1":1.0821},"30": {"damage_1":1.0821}}},"cdr_info": {"common_cdr": [0.95, 0.85],"common_cdrr": [], "lingtong_info": {"40": 0.15,"75": 0.15,"95": 0.2}}}
