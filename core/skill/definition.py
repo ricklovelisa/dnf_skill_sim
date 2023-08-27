@@ -1,5 +1,6 @@
 import copy
 import json
+from abc import abstractmethod
 from typing import Dict, List
 
 from core.skill.cdr import CDRInfo, make_cdr_info
@@ -107,13 +108,13 @@ class Skill:
     def get_final_cd(self, is_op: bool, times: int):
         return self.cd * self._cdr_info.get_cdr(is_op, times)
 
-    def get_final_damage(self, time, times) -> float:
-        if self._name == '雷云':
-            # print(time / 2 * self._damage_2)
-            # print(times * self._damage)
-            return time / 2 * self._damage_2 + times * self._damage
-        else:
-            return self._damage * times
+    # def get_final_damage(self, time, times) -> float:
+    #     if self._name == '雷云':
+    #         # print(time / 2 * self._damage_2)
+    #         # print(times * self._damage)
+    #         return time / 2 * self._damage_2 + times * self._damage
+    #     else:
+    #         return self._damage * times
 
     @staticmethod
     def create_skill_with_stone(skill_name: str, skill_info: Dict, stone_info: Dict):
@@ -247,28 +248,13 @@ class SkillQueue:
     def plot(self, total_time):
         pass
 
+    @abstractmethod
     def compute_total_damage(self, total_time):
-        active_skill_damage = sum([x.damage for x in self._queue])
-        evn_skill_damage = [total_time // 2 * x.damage_2 for x in self._queue if x.name == '雷云'][0]
+        pass
 
-        return active_skill_damage + evn_skill_damage
-
+    @abstractmethod
     def compute_damage_by_skill(self, total_time):
-        damage_dict = {}
-        for skill in self._queue:
-            if skill.name in damage_dict:
-                damage_dict[skill.name]['times'] += 1
-            else:
-                damage_dict[skill.name] = {'times': 1}
-
-        for skill in self._queue:
-            damage = skill.get_final_damage(total_time, damage_dict[skill.name]['times'])
-            damage_dict[skill.name]['damage'] = damage
-
-        damage_list = [{'name': k, 'times': v['times'], 'damage': v['damage']} for k, v in damage_dict.items()]
-        damage_list = sorted(damage_list, key=lambda x: x['damage'], reverse=True)
-
-        return damage_list
+        pass
 
     def append(self, obj):
         if isinstance(obj, SkillQueue):

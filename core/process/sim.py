@@ -361,6 +361,7 @@ class Sim:
         skill_and_stone_sets = sim.read_skill_and_stone_sets()
         for skill_and_stone_set in skill_and_stone_sets:
             for set_file_name in ['实际有的配装', '完美自定义配装']:
+            # for set_file_name in ['实际有的配装']:
             # for set_file_name in ['完美自定义配装']:
                 self.run(cls=cls, epochs=epochs, set_file_name=set_file_name,
                          choice_type=choice_type, time_range=time_range,
