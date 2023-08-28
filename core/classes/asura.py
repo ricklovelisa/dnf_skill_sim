@@ -1,7 +1,11 @@
+from core.classes.cls import DnfCls
 from core.skill.definition import SkillQueue
 
 
-class Asura(SkillQueue):
+class Asura(DnfCls):
+    def __init__(self):
+        super().__init__()
+
     def compute_total_damage(self, total_time):
         active_skill_damage = sum([x.damage for x in self._queue])
         evn_skill_damage = [total_time // 2 * x.damage_2 for x in self._queue if x.name == '雷云'][0]
