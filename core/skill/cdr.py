@@ -14,6 +14,7 @@ class CDRInfo:
                  blue_fuwen: int,
                  common_cdr: float,
                  common_cdrr: float,
+                 op_cdr_coef: int = 1,
                  weapon_cdr: float = 1):
         # other_skill_cdr: float,
         # other_skill_cdrr: float):
@@ -24,15 +25,16 @@ class CDRInfo:
         self._common_cdr = common_cdr
         self._common_cdrr = common_cdrr
         self._weapon_cdr = weapon_cdr
-        # self._other_skill_cdr = other_skill_cdr
-        # self._other_skill_cdrr = other_skill_cdrr
+        self._op_cdr_coef = op_cdr_coef
 
     def get_cdr(self, is_op: bool, skill_times: int):
 
         # 手搓
         op_ind_and_weapon_cdr = self._weapon_cdr
-        if is_op:
-            op_ind_cdr = self._op_ind_cdr
+        if is_op:  # 手搓和武器cdr是加算
+            weapon_cdr = 1 - self._weapon_cdr
+            op_ind_cdr = 1 - self._op_ind_cdr
+            op_ind_and_weapon_cdr = 1 - (weapon_cdr + self._op_cdr_coef * op_ind_cdr)
 
         # final_cdr = self._common_cdr * self._other_skill_cdr * self._red_fuwen * self._blue_fuwen * op_ind_cdr
         # final_cdrr = self._common_cdrr + self._other_skill_cdrr
@@ -94,11 +96,19 @@ def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict, fuwen_
         if skill_level in skill_level_list:
             op_ind_cdr = op_cdr
 
+    # weapon_cdr = 1
+    # if 'weapon_cdr' in cdr_info_json:
+    #     weapon_cdr = cdr_info_json['weapon_cdr']
+
+    op_cdr_coef = 1
+    if 'op_cdr_coef' in cdr_info_json:
+        op_cdr_coef = cdr_info_json['op_cdr_coef']
+
     return CDRInfo(op_ind_cdr=op_ind_cdr,
                    lingtong_pct=lingtong_pct,
                    red_fuwen=final_red_fuwen_cdr,
                    blue_fuwen=final_blue_fuwen_cdr,
                    common_cdr=common_cdr,
-                   common_cdrr=common_cdrr)
-    # other_skill_cdr=final_other_skill_cdr,
-    # other_skill_cdrr=0)
+                   common_cdrr=common_cdrr,
+                   weapon_cdr=weapon_cdr,
+                   op_cdr_coef=op_cdr_coef)
