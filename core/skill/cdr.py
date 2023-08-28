@@ -13,7 +13,8 @@ class CDRInfo:
                  red_fuwen: int,
                  blue_fuwen: int,
                  common_cdr: float,
-                 common_cdrr: float):
+                 common_cdrr: float,
+                 weapon_cdr: float = 1):
         # other_skill_cdr: float,
         # other_skill_cdrr: float):
         self._op_ind_cdr = op_ind_cdr
@@ -22,19 +23,20 @@ class CDRInfo:
         self._blue_fuwen = blue_fuwen
         self._common_cdr = common_cdr
         self._common_cdrr = common_cdrr
+        self._weapon_cdr = weapon_cdr
         # self._other_skill_cdr = other_skill_cdr
         # self._other_skill_cdrr = other_skill_cdrr
 
     def get_cdr(self, is_op: bool, skill_times: int):
 
         # 手搓
-        op_ind_cdr = 1
+        op_ind_and_weapon_cdr = self._weapon_cdr
         if is_op:
             op_ind_cdr = self._op_ind_cdr
 
         # final_cdr = self._common_cdr * self._other_skill_cdr * self._red_fuwen * self._blue_fuwen * op_ind_cdr
         # final_cdrr = self._common_cdrr + self._other_skill_cdrr
-        final_cdr = self._common_cdr * self._red_fuwen * self._blue_fuwen * op_ind_cdr
+        final_cdr = self._common_cdr * self._red_fuwen * self._blue_fuwen * op_ind_and_weapon_cdr
         final_cdrr = self._common_cdrr
 
         # 灵通
@@ -43,7 +45,8 @@ class CDRInfo:
             curr_lingtong_cdrr = skill_times % (cycle_times + 1) * self._lingtong_pct
             final_cdrr += curr_lingtong_cdrr
 
-        return final_cdr / (1 + final_cdrr)
+        # cdr最多不超过0.3
+        return max(final_cdr / (1 + final_cdrr), 0.3)
 
 
 def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict, fuwen_info: Dict):
