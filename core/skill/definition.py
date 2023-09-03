@@ -248,13 +248,13 @@ class SkillQueue:
     def plot(self, total_time):
         pass
 
-    @abstractmethod
-    def compute_total_damage(self, total_time):
-        pass
-
-    @abstractmethod
-    def compute_damage_by_skill(self, total_time):
-        pass
+    # @abstractmethod
+    # def compute_total_damage(self, total_time):
+    #     pass
+    #
+    # @abstractmethod
+    # def compute_damage_by_skill(self, total_time):
+    #     pass
 
     def append(self, obj):
         if isinstance(obj, SkillQueue):
