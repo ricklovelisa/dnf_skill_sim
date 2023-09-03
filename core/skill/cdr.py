@@ -96,9 +96,9 @@ def make_cdr_info(skill_name: str, skill_level: int, cdr_info_json: Dict, fuwen_
         if skill_level in skill_level_list:
             op_ind_cdr = op_cdr
 
-    # weapon_cdr = 1
-    # if 'weapon_cdr' in cdr_info_json:
-    #     weapon_cdr = cdr_info_json['weapon_cdr']
+    weapon_cdr = 1
+    if 'weapon_cdr' in cdr_info_json:
+        weapon_cdr = cdr_info_json['weapon_cdr']
 
     op_cdr_coef = 1
     if 'op_cdr_coef' in cdr_info_json:
