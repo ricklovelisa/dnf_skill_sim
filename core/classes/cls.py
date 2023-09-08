@@ -20,6 +20,14 @@ class DnfCls:
     def queue(self):
         return self._queue
 
+    def _update_cdr_info(self):
+
+
+    def update_weapon_cdr(self, weapon_cdr):
+        self._weapon_cdr = weapon_cdr
+        self._update_cdr_info()
+
+
     def set_skills(self, skills: List[Skill]):
         self._skills = skills
 
