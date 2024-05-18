@@ -1,4 +1,5 @@
 import json
+import os
 import random
 from datetime import datetime
 from itertools import combinations, permutations
@@ -12,7 +13,7 @@ from core.skill.definition import Skill, make_force_set, SkillQueue
 from core.skill.queue import SkillQueue as OldSkillQueue
 from search import Search
 
-DATA_PATH = '../../data'
+DATA_PATH = 'data'
 
 
 class Sim:
@@ -111,7 +112,7 @@ class Sim:
 
     @staticmethod
     def read_skill_and_stone_sets():
-        with open(f'{DATA_PATH}/skill_and_stone_sets.json', 'r', encoding='utf_8') as f:
+        with open(f'{DATA_PATH}/skill_and_stone_sets_2.json', 'r', encoding='utf_8') as f:
             return json.load(f)
 
     def sim_best_skill_queue_by_search(self, start_skill_set: SkillSet, skill_sets: List[SkillSet],
@@ -225,7 +226,7 @@ class Sim:
                                                               skill_sets=skill_sets, total_time=total_time,
                                                               skill_info=skill_info, search_strategy=search_strategy)
 
-            damage = skill_queue.compute_total_damage(total_time=total_time)
+            damage = .compute_total_damage(total_time=total_time)
             if damage > max_skill_queue['damage']:
                 max_skill_queue['damage'] = damage
                 max_skill_queue['skill_queue'] = skill_queue
@@ -360,7 +361,8 @@ class Sim:
     def run_from_config(self, cls, epochs, choice_type, time_range, step, op_info):
         skill_and_stone_sets = sim.read_skill_and_stone_sets()
         for skill_and_stone_set in skill_and_stone_sets:
-            for set_file_name in ['实际有的配装', '完美自定义配装']:
+            # for set_file_name in ['实际有的配装', '完美自定义配装']:
+            for set_file_name in ['无色红皮配装']:
             # for set_file_name in ['实际有的配装']:
             # for set_file_name in ['完美自定义配装']:
                 self.run(cls=cls, epochs=epochs, set_file_name=set_file_name,
@@ -370,9 +372,9 @@ class Sim:
 
 if __name__ == '__main__':
     random.seed(19920125)
-    sim = Sim(debug=False)
-    sim.run_from_config(cls='阿修罗', epochs=299999, choice_type='search', time_range=(20, 60), step=5,
-                        op_info=[True, False])
+    sim = Sim(debug=True)
+    sim.run_from_config(cls='阿修罗', epochs=299999, choice_type='search', time_range=(40, 45), step=5,
+                        op_info=[True])
     # sim.run(cls='阿修罗', epochs=299999, set_file_name='test_sim_set',
     #         choice_type='search', time_range=(40, 40),
     #         stone_and_skill_sets={"name": "不动加点", "stone_sets": ["炸热", "不动", "呀呀呀", "雷云"],
